@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import pool from './config/data_base_conection.js';
+import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
 //import { createClient } from '@supabase/supabase-js';
 
@@ -18,15 +18,15 @@ app.use(cors());
 
 // Register new user need fix -----------------------------------------------------------------
 app.post('/register', async (req, res) => {
-  const { nombre, email, password } = req.body;
+  const { user_name, email, password, register_date } = req.body;
 
   try {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     await pool.query(
-      `INSERT INTO usuario (nombre, email, password) VALUES ($1, $2, $3)`,
-      [nombre, email, hashedPassword]
+      `INSERT INTO users (user_name, email, password, register_date) VALUES ($1, $2, $3, $4)`,
+      [user_name, email, hashedPassword, register_date]
     );
 
     res.status(201).json({ message: 'User registered successfully' });
@@ -43,8 +43,8 @@ app.post('/login', async (req, res) => {
   try {
     // Search only for admin user
     const result = await pool.query(
-      'SELECT * FROM usuarios WHERE correo = $1 AND rol = $2',
-      [email, 'admin']
+      'SELECT * FROM users WHERE email = $1 AND rol_id = $2',
+      [email, '']
     );
 
     if (result.rows.length === 0) {
