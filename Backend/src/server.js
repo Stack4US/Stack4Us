@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import pool from './data_base_conection.js';
+import pool from './config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
 //import { createClient } from '@supabase/supabase-js';
 
