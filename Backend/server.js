@@ -18,15 +18,18 @@ app.use(cors());
 
 // Register new user need fix -----------------------------------------------------------------
 app.post('/register', async (req, res) => {
-  const { user_name, email, password, register_date } = req.body;
+  console.log("Body recibido:", req.body);
+
+  const { user_name, email, password} = req.body;
+  const rol_id = '1'; 
 
   try {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     await pool.query(
-      `INSERT INTO users (user_name, email, password, register_date) VALUES ($1, $2, $3, $4)`,
-      [user_name, email, hashedPassword, register_date]
+      `INSERT INTO users (user_name, email, password, rol_id) VALUES ($1, $2, $3, $4)`,
+      [user_name, email, hashedPassword, rol_id]
     );
 
     res.status(201).json({ message: 'User registered successfully' });
@@ -38,21 +41,20 @@ app.post('/register', async (req, res) => {
 
 // Login endpoint (admin only)
 app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { user_name, password } = req.body;
 
   try {
-    // Search only for admin user
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND rol_id = $2',
-      [email, '']
+      'SELECT * FROM users WHERE user_name = $1',
+      [user_name]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Admin user not found' });
+      return res.status(401).json({ error: 'User not found' });
     }
 
     const user = result.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ error: 'Incorrect password' });
@@ -62,7 +64,7 @@ app.post('/login', async (req, res) => {
       message: 'Login successful',
       user: {
         id: user.id,
-        nombre: user.nombre,
+        user_name: user.user_name,
         email: user.email
       }
     });
@@ -71,6 +73,7 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
