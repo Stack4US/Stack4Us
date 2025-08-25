@@ -72,14 +72,20 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
-app.get('/Users', (req, res) => {
-    pool.query('SELECT * FROM users', (err, result) => {
-        if (err) {
-        console.error('Error fetching users:', err);
-        return res.status(500).json({ error: 'Error fetching users' });
-        }
-        res.status(200).json(result.rows);
-    });
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
 });
+
+
+app.get('/Users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: 'Error fetching users' });
+  }
+});
+
+
 
