@@ -69,11 +69,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// just listening server
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
-});
-
 // Endpoint to fetch all users
 app.get('/Users', async (req, res) => {
   try {
@@ -97,13 +92,40 @@ app.get('/all-posts', async (req, res) => {
   }
 });
 
-
-// Endpoint to insert a new post with image upload - need fix
+// Endpoint to insert a new post with image upload
 app.post('/insert-post', upload.single("image"), async (req, res) => {
   try {
     const { type, title, description, user_id, status } = req.body;
     let image = null;
 
+    // Basic validation
+    if (!type || type.trim() === '') {
+      return res.status(400).json({ error: 'Need a type to work :c'});
+    }
+    
+    if (!title || title.trim() === '') {
+      return res.status(400).json({ error: 'Need a title to work :c'});
+    }
+
+    if (!description || description.trim() === '') {
+      return res.status(400).json({ error: 'Need a description to work :c'});
+    }
+
+    if (!user_id || isNaN(user_id)) {
+      return res.status(400).json({ error: 'Need a valid user_id to work :c'});
+    }
+
+    // Check if user_id exists in users table
+    const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(400).json({ error: 'User_id does not exist :c'});
+    }
+
+    // Process status to ensure it's either 'unsolved' or 'solved'
+    const validStatuses = ['unsolved', 'solved'];
+    const finalStatus = status && validStatuses.includes(status) ? status : 'unsolved';
+
+    // If an image file is provided, upload it to Cloudinary
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
@@ -116,15 +138,21 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
     
     const result = await pool.query(
       'INSERT INTO post (type, title, description, user_id, image, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [type, title, description, user_id, image, status]
+      [type. trim(), title.trim(), description.trim(), user_id, image, finalStatus]
     );
     res.status(201).json(result.rows[0]); 
   }
   catch (err) {
     console.error('Error inserting post:', err);
+
+    if (err.code === '23503') {
+      return res.status(400).json({ error: 'Foreign key violation: user_id does not exist' });
+    }
+
     res.status(500).json({ error: 'Error inserting post' });
   }
 });
+
 
 app.get('/answers', async (req, res) => {
   try {
@@ -134,4 +162,9 @@ app.get('/answers', async (req, res) => {
     console.error('Error fetching answers:', err);
     res.status(500).json({ error: 'Error fetching answer' });
   }
+});
+
+// just listening server
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
 });
