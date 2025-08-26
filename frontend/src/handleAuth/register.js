@@ -4,26 +4,26 @@ function register(url) {
   
   if (!form) return;
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const name = document.getElementById('name').value;
+    const user_name = document.getElementById('name').value;
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
     // Validación básica
-    if (!name || !email || !password) {
+    if (!user_name || !email || !password) {
       alert('Por favor, completa todos los campos');
       return;
     }
     
     const userData = {
-      name,
+      user_name,
       email,
       password,
       // role: document.getElementById('role').value
     };
-    const data = axios.post(`${url}/users/register`, userData) // Backend can update this root name
+    await axios.post(`${url}/register`, userData) // Backend can update this root name
   });
 }
 
