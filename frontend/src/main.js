@@ -1,7 +1,6 @@
 import isAuth from "./handleAuth/isAuth";
-
-import login from "./handleAuth/login";
 import register from "./handleAuth/register";
+import login from "./handleAuth/login";
 // routes
 const routes = {
 
@@ -24,35 +23,28 @@ function setupNavigation() {
   
   if (!nav) return;
   
-  const userRole = localStorage.getItem("role");
+  const userRole = localStorage.getItem("role"); // This variable was created to handle views || admin || coder || team_leader
 
   if (!isAuth()) {
     nav.innerHTML = `
       <a href="/register" class="noAuth" data-link>Register</a>
     `;
     return;
+  } else {
+    nav.innerHTML = `
+      <a href="/dashboard" data-link>Comentarios</a>
+      <a href="/ranking" data-link>Ranking</a>
+      <a href="/logout" data-link id="close-sesion">Logout</a>
+    `;
   }
-  
-  // if (userRole === "admin") {
-  //   nav.innerHTML = `
-  //     <a href="/dashboard" data-link>DATA CUSTOMERS</a>
-  //     <a href="/uploadData" data-link>Upload Data</a>
-  //     <a href="/logout" data-link id="close-sesion">Logout</a>
-  //     <a href="/newCustomer" data-link>New customer</a>
-  //   `;
-  // } else if (userRole === "user") {
-  //   nav.innerHTML = `
-  //     <a href="/dashboard" data-link>DATA CUSTOMERS</a>
-  //     <a href="/logout" data-link id="close-sesion">Logout</a>
-  //   `;
-  // }
 }
 
-async function navigate(pathname) {
+export async function navigate(pathname) {
   // Allow access to login and register pages without authentication
   if (!isAuth() && pathname !== "/login" && pathname !== "/register") {
     pathname = "/login";
   }
+
   const route = routes[pathname];
   const html = await fetch(route).then((res) => res.text());
   document.getElementById("content").innerHTML = html;
