@@ -1,28 +1,34 @@
-function login() {
+import axios from 'axios';
+export let loged = false;
+import { navigate } from '../main';
+function login(url) {
   const form = document.getElementById('form_login');
   
   if (!form) return;
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const name = document.getElementById('name').value;
+    const user_name = document.getElementById('name').value;
     const password = document.getElementById('password').value;
     
-    if (!name || !password) {
+    if (!user_name || !password) {
       alert('Por favor, completa todos los campos');
       return;
     }
     
     const userData = {
-      name,
+      user_name,
       password
     };
-    const data = axios.post(`${url}/users/login`, userData) // Backend can update this root name
-    // localStorage.setItem("Auth", "true");
-    // localStorage.setItem("role", "user");
-    
+      const data = await axios.post(`${url}/login`, userData)
+      loged = data.status === 200 || data.status === 201;
+      if (loged) {
+         localStorage.setItem("Auth", "true");
+        localStorage.setItem("role", "coder");
+        navigate("/dashboard")
+      }
   });
 }
 
-export default login
+export default login;
