@@ -2,12 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
-//import { createClient } from '@supabase/supabase-js';
-
-
-//const supabaseUrl = process.env.SUPABASE_URL;
-//const supabaseKey = process.env.SUPABASE_KEY;
-//const supabase = createClient(supabaseUrl, supabaseKey);
+import { cloudinary, upload } from './src/config/cloudinary_config.js';
 
 const app = express();
 const PORT = 3000;
@@ -16,7 +11,7 @@ const PORT = 3000;
 app.use(express.json());
 app.use(cors());
 
-// Register new user need fix -----------------------------------------------------------------
+// Register user endpoint
 app.post('/register', async (req, res) => {
   console.log("Body recibido:", req.body);
 
@@ -39,7 +34,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login endpoint (admin only)
+// Login endpoint coder mode
 app.post('/login', async (req, res) => {
   const { user_name, password } = req.body;
 
@@ -74,12 +69,12 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
+// just listening server
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
 });
 
-
+// Endpoint to fetch all users
 app.get('/Users', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users');
@@ -91,8 +86,8 @@ app.get('/Users', async (req, res) => {
 });
 
 
-
-app.get('/post', async (req, res) => {
+//Endpoint to fetch all posts
+app.get('/all-posts', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM post');
     res.status(200).json(result.rows);
@@ -102,6 +97,34 @@ app.get('/post', async (req, res) => {
   }
 });
 
+
+// Endpoint to insert a new post with image upload - need fix
+app.post('/insert-post', upload.single("image"), async (req, res) => {
+  try {
+    const { type, title, description, user_id, status } = req.body;
+    let image = null;
+
+    if (req.file) {
+      const b64 = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: "posts",
+      });
+      image = uploadResult.secure_url;
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO post (type, title, description, user_id, image, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [type, title, description, user_id, image, status]
+    );
+    res.status(201).json(result.rows[0]); 
+  }
+  catch (err) {
+    console.error('Error inserting post:', err);
+    res.status(500).json({ error: 'Error inserting post' });
+  }
+});
 
 app.get('/answers', async (req, res) => {
   try {
