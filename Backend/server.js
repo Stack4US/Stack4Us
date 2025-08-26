@@ -92,3 +92,23 @@ app.get('/Users', async (req, res) => {
 
 
 
+app.get('/post', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM post');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching posts:', err);
+    res.status(500).json({ error: 'Error fetching post' });
+  }
+});
+
+
+app.get('/answers', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM answer');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching answers:', err);
+    res.status(500).json({ error: 'Error fetching answer' });
+  }
+});
