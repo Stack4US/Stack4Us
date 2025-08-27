@@ -22,7 +22,6 @@ function setupNavigation() {
   const nav = document.getElementById("navUl");
   if (!nav) return;
 
-  const userRole = localStorage.getItem("role"); // manejo futuro por rol
 
   if (!isAuth()) {
     nav.innerHTML = `
