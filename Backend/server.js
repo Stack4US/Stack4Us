@@ -275,7 +275,7 @@ app.delete('/post/:id', async (req, res) => {
 
 // ======================== DELETE OWN POST AS USER========================
 app.delete('/owns-posts/:post_id', authenticateToken, async (req, res) => {
-  const post_id = parseInt(req.params.post_id, 10); // asegurar que es int
+  const post_id = parseInt(req.params.post_id, 10);
   const user_id = req.user.user_id;
 
   try {
@@ -295,7 +295,25 @@ app.delete('/owns-posts/:post_id', authenticateToken, async (req, res) => {
   }
 });
 
-// as user delete only my own aswers
+// ======================== DELETE OWN ANSWER AS USER========================
+app.delete('/owns-answers/:answer_id', authenticateToken, async (req, res) => {
+  const answer_id = parseInt(req.params.answer_id, 10);
+  const user_id = req.user.user_id;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM answer WHERE answer_id = $1 AND user_id = $2 RETURNING *',
+      [answer_id, user_id]
+    );  
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Answer not found or you do not have permission to delete this answer' });
+    }
+    res.status(200).json({ message: 'Answer deleted successfully', deleted: result.rows[0] });
+  } catch (err) {
+    console.error(`Error deleting answer ${answer_id}:`, err);
+    res.status(500).json({ error: 'Error deleting answer' });
+  }
+});
 
 
 // as user edit only my own post
