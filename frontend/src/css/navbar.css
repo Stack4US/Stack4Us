@@ -1,0 +1,82 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+}
+
+header nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    font-family: "Noto Sans", sans-serif;
+}
+/* make header a positioning context for the corner decoration */
+header{
+    position: relative;
+    overflow: visible;
+}
+
+/* half-circle (media bolita) in the top-left corner */
+/* remove global corner decoration; we'll place half-circle next to the login link */
+header .head-nav {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    gap: 10px;
+}
+
+header .head-nav h1 {
+    font-weight: 300;
+}
+
+/* .noAuth styles are defined elsewhere */
+
+/* half-circle at the right of the Login link */
+header nav .noAuth{
+    position: relative;
+    display: inline-block;
+    padding: 0.6rem 1.2rem 0.6rem 1rem; /* leave room on the right for the circle */
+    background: transparent; /* keep link transparent so circle shows beside it */
+    color: #ffffff !important;
+    text-decoration: none;
+    font-weight: 500;
+    z-index: 1;
+}
+
+header nav .noAuth::after{
+    content: '';
+    position: fixed;
+    
+    right: -210px;
+    top: -220px; 
+    width: 369px;
+    height: 357px;
+    background: #5E67CD;
+    border-radius: 50%;
+    z-index: -2;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+@media screen and (min-width: 1120px) {
+    header {
+        font-size: 20px;
+    }
+
+    header nav .noAuth::after{
+    right: -290px;
+    top: -290px; 
+    width: 569px;
+    height: 557px;
+}
+
+
+}
+

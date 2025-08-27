@@ -1,0 +1,35 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+footer {
+    padding: 20px;
+    text-align: center;
+    font-family: "Poppins", sans-serif;
+    font-size: 20px !important;
+}
+
+footer p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #5E67CD;
+    font-size: 13px !important;
+    font-weight: bold;
+}
+
+footer a {
+    color: #5E67CD;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+@media screen and (min-width: 600px) {
+    footer p {
+        font-size: 15px !important;
+    }
+}

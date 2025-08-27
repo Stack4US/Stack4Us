@@ -1,0 +1,58 @@
+<div class="dashboard-container">
+  <h1>Dashboard - Stack4Us</h1>
+
+  <div class="dashboard-content">
+    <!-- Tarjet -->
+    <div class="stats-cards">
+      <div class="card">
+        <h3>Preguntas</h3>
+        <p class="stat-number" id="questions-count">0</p>
+      </div>
+      <div class="card">
+        <h3>Respuestas</h3>
+        <p class="stat-number" id="answers-count">0</p>
+      </div>
+      <div class="card">
+        <h3>Puntos</h3>
+        <p class="stat-number" id="points-count">0</p>
+      </div>
+    </div>
+
+    <!-- Create post -->
+    <form id="post-form" class="card" style="margin:12px 0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <input name="title" placeholder="Título" required />
+        <select name="type">
+          <option value="javascript">Javascript</option>
+          <option value="react">React</option>
+          <option value="node">Node</option>
+          <option value="bug">Bug</option>
+          <option value="otro">Otro</option>
+        </select>
+
+        <textarea name="description" placeholder="Describe el problema…" rows="3" style="grid-column:1/-1" required></textarea>
+
+        <select name="status">
+          <option value="unsolved">Sin resolver</option>
+          <option value="solved">Resuelto</option>
+        </select>
+
+        <input type="file" name="image" accept="image/*" />
+        <!-- TODO: reemplazar por el id real del usuario tras login -->
+        <input type="hidden" name="user_id" value="1" />
+      </div>
+
+      <button type="submit">Publicar</button>
+      <small id="post-hint"></small>
+    </form>
+
+    <!-- List  posts -->
+    <div id="posts" class="stack"></div>
+
+    <!-- Answers -->
+    <div class="recent-activity">
+      <h2>Answers recientes</h2>
+      <div id="answers" class="list"></div>
+    </div>
+  </div>
+</div>
