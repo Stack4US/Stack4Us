@@ -7,23 +7,23 @@ import { cloudinary, upload } from './src/config/cloudinary_config.js';
 const app = express();
 const PORT = 3000;
 
-// Middleware configuration
+// Middlewares
 app.use(express.json());
 app.use(cors());
 
-// Register user endpoint
+// ========================= REGISTER =========================
 app.post('/register', async (req, res) => {
   console.log("Body recibido:", req.body);
-
-  const { user_name, email, password} = req.body;
-  const rol_id = '1'; 
+  const { user_name, email, password } = req.body;
+  const rol_id = '1';
 
   try {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     await pool.query(
-      `INSERT INTO users (user_name, email, password, rol_id) VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO users (user_name, email, password, rol_id)
+       VALUES ($1, $2, $3, $4)`,
       [user_name, email, hashedPassword, rol_id]
     );
 
@@ -34,7 +34,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Login endpoint coder mode
+// =========================== LOGIN ===========================
 app.post('/login', async (req, res) => {
   const { user_name, password } = req.body;
 
@@ -50,7 +50,6 @@ app.post('/login', async (req, res) => {
 
     const user = result.rows[0];
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({ error: 'Incorrect password' });
     }
@@ -58,9 +57,10 @@ app.post('/login', async (req, res) => {
     res.status(200).json({
       message: 'Login successful',
       user: {
-        id: user.id,
+        id: user.user_id,
+        user_id: user.user_id,
         user_name: user.user_name,
-        email: user.email
+        email: user.email,
       }
     });
   } catch (error) {
@@ -69,8 +69,8 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Endpoint to fetch all users
-app.get('/Users', async (req, res) => {
+// ======================= LIST USERS ==========================
+app.get('/Users', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users');
     res.status(200).json(result.rows);
@@ -80,11 +80,15 @@ app.get('/Users', async (req, res) => {
   }
 });
 
-
-//Endpoint to fetch all posts
-app.get('/all-posts', async (req, res) => {
+// ======================== LIST POSTS =========================
+app.get('/all-posts', async (_req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM post');
+    const result = await pool.query(`
+      SELECT 
+        post_id, type, date, title, description, user_id, image, status
+      FROM post
+      ORDER BY post_id DESC
+    `);
     res.status(200).json(result.rows);
   } catch (err) {
     console.error('Error fetching posts:', err);
@@ -92,69 +96,69 @@ app.get('/all-posts', async (req, res) => {
   }
 });
 
-// Endpoint to insert a new post with image upload
+// ===================== INSERT NEW POST =======================
 app.post('/insert-post', upload.single("image"), async (req, res) => {
+  console.log('[INSERT-POST] body:', req.body);
+  console.log('[INSERT-POST] file?:', !!req.file);
+
   try {
-    const { type, title, description, user_id, status } = req.body;
-    let image = null;
+    let { type, title, description, user_id, status } = req.body;
 
-    // Basic validation
-    if (!type || type.trim() === '') {
-      return res.status(400).json({ error: 'Need a type to work :c'});
-    }
-    
-    if (!title || title.trim() === '') {
-      return res.status(400).json({ error: 'Need a title to work :c'});
-    }
+    const cleanType  = String(type || '').trim().toLowerCase();
+    const cleanTitle = String(title || '').trim();
+    const cleanDesc  = String(description || '').trim();
+    const uid = parseInt(user_id, 10);
 
-    if (!description || description.trim() === '') {
-      return res.status(400).json({ error: 'Need a description to work :c'});
+    if (!cleanType)  return res.status(400).json({ error: 'Need a type to work :c' });
+    if (!cleanTitle) return res.status(400).json({ error: 'Need a title to work :c' });
+    if (!cleanDesc)  return res.status(400).json({ error: 'Need a description to work :c' });
+    if (!Number.isInteger(uid)) {
+      return res.status(400).json({ error: 'Need a valid user_id to work :c' });
     }
 
-    if (!user_id || isNaN(user_id)) {
-      return res.status(400).json({ error: 'Need a valid user_id to work :c'});
-    }
-
-    // Check if user_id exists in users table
-    const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
+    const userExists = await pool.query(
+      'SELECT user_id FROM users WHERE user_id = $1',
+      [uid]
+    );
     if (userExists.rows.length === 0) {
-      return res.status(400).json({ error: 'User_id does not exist :c'});
+      return res.status(400).json({ error: 'User_id does not exist :c' });
     }
 
-    // Process status to ensure it's either 'unsolved' or 'solved'
     const validStatuses = ['unsolved', 'solved'];
-    const finalStatus = status && validStatuses.includes(status) ? status : 'unsolved';
+    const cleanStatus = validStatuses.includes(String(status).toLowerCase())
+      ? String(status).toLowerCase()
+      : 'unsolved';
 
-    // If an image file is provided, upload it to Cloudinary
+    // Subir imagen a Cloudinary o null
+    let imageUrl = null;
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
-      const uploadResult = await cloudinary.uploader.upload(dataURI, {
-        folder: "posts",
-      });
-      image = uploadResult.secure_url;
+      const uploadResult = await cloudinary.uploader.upload(dataURI, { folder: "posts" });
+      imageUrl = uploadResult.secure_url;
     }
-    
-    const result = await pool.query(
-      'INSERT INTO post (type, title, description, user_id, image, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [type. trim(), title.trim(), description.trim(), user_id, image, finalStatus]
+
+    const postIns = await pool.query(
+      `INSERT INTO post (type, date, title, description, user_id, image, status)
+       VALUES ($1, NOW(), $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [cleanType, cleanTitle, cleanDesc, uid, imageUrl, cleanStatus]
     );
-    res.status(201).json(result.rows[0]); 
-  }
-  catch (err) {
-    console.error('Error inserting post:', err);
 
-    if (err.code === '23503') {
-      return res.status(400).json({ error: 'Foreign key violation: user_id does not exist' });
-    }
-
-    res.status(500).json({ error: 'Error inserting post' });
+    res.status(201).json(postIns.rows[0]);
+  } catch (err) {
+    console.error('[INSERT-POST] Error:', err);
+    res.status(500).json({
+      error: 'Error inserting post',
+      detail: err.message,
+      code: err.code || null
+    });
   }
 });
 
-// Get answers
-app.get('/answers', async (req, res) => {
+
+// ======================= LIST ANSWERS ========================
+app.get('/answers', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM answer');
     res.status(200).json(result.rows);
@@ -163,6 +167,7 @@ app.get('/answers', async (req, res) => {
     res.status(500).json({ error: 'Error fetching answer' });
   }
 });
+
 
 // Endpoint to create a answer 
 app.post('/answer', upload.single("image"), async (req, res) => {
@@ -211,7 +216,8 @@ app.post('/answer', upload.single("image"), async (req, res) => {
   }
 });
 
-// just listening server
+
+// ========================= LISTEN ============================
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
 });
