@@ -315,15 +315,59 @@ app.delete('/owns-answers/:answer_id', authenticateToken, async (req, res) => {
   }
 });
 
+// ======================== EDIT OWN POST AS USER========================
+app.put('/owns-posts/:post_id', authenticateToken, upload.single("image"), async (req, res) => {
+  const post_id = parseInt(req.params.post_id, 10);
+  const user_id = req.user.user_id; 
+  const { type, title, description, status } = req.body;
+  const image = req.file ? req.file.path : null;
 
-// as user edit only my own post
+  try {
+    const postResult = await pool.query(
+      "SELECT * FROM post WHERE post_id = $1 AND user_id = $2",
+      [post_id, user_id]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(403).json({ error: "No tienes permiso para editar este post" });
+    }
+
+    const updateQuery = `
+      UPDATE post
+      SET 
+        type = COALESCE($1, type),
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        status = COALESCE($4, status),
+        image = COALESCE($5, image),
+        date = NOW()
+      WHERE post_id = $6 AND user_id = $7
+      RETURNING *;
+    `;
+
+    const updatedPost = await pool.query(updateQuery, [
+      type || null,
+      title || null,
+      description || null,
+      status || null,
+      image || null,
+      post_id,
+      user_id
+    ]);
+
+    res.json({
+      message: "Post actualizado con éxito",
+      post: updatedPost.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Error actualizando post:", err);
+    res.status(500).json({ error: "Error en el servidor" });
+  }
+});
+
 
 // as user add raking to other aswers
-
-
-
-
-
 
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
