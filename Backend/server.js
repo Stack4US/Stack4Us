@@ -3,6 +3,8 @@ import cors from 'cors';
 import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
 import { cloudinary, upload } from './src/config/cloudinary_config.js';
+import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 
 const app = express();
 const PORT = 3000;
@@ -10,6 +12,23 @@ const PORT = 3000;
 // Middlewares
 app.use(express.json());
 app.use(cors());
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' })
+  };
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+}
 
 // ========================= REGISTER =========================
 app.post('/register', async (req, res) => {
@@ -54,8 +73,11 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
+    const token = generateToken(user);
+
     res.status(200).json({
       message: 'Login successful',
+      token,
       user: {
         id: user.user_id,
         user_id: user.user_id,
@@ -68,6 +90,15 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+function generateToken(user) {
+  return jwt.sign({ 
+    user_id: user.user_id, 
+    email: user.email,
+    rol: user.rol_id }, 
+    process.env.JWT_SECRET, { expiresIn: '5h' }
+  );
+}
 
 // ======================= LIST USERS ==========================
 app.get('/Users', async (_req, res) => {
@@ -242,29 +273,30 @@ app.delete('/post/:id', async (req, res) => {
 });
 
 
-// as user delete only my post 
-
-app.delete('/owns-posts/:post_id', async (req, res) => {
-  const { post_id } = req.params;
-  const { user_id } = req.user.user_id;
+// ======================== DELETE OWN POST AS USER========================
+app.delete('/owns-posts/:post_id', authenticateToken, async (req, res) => {
+  const post_id = parseInt(req.params.post_id, 10); // asegurar que es int
+  const user_id = req.user.user_id;
 
   try {
     const result = await pool.query(
       'DELETE FROM post WHERE post_id = $1 AND user_id = $2 RETURNING *',
       [post_id, user_id]
     );
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Post not found or you do not have permission to delete this post' });
     }
-    res.status.json({ message: 'Post deleted successfully' });
+
+    res.status(200).json({ message: 'Post deleted successfully', deleted: result.rows[0] });
   } catch (err) {
     console.error(`Error deleting post ${post_id}:`, err);
     res.status(500).json({ error: 'Error deleting post' });
   }
-
 });
 
 // as user delete only my own aswers
+
 
 // as user edit only my own post
 
