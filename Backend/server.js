@@ -80,6 +80,44 @@ app.get('/Users', async (_req, res) => {
   }
 });
 
+// ======================= EDIT USER ===========================
+app.post('/edit-user/:user_id', upload.single("image"), async (req, res) => {
+  const { description } = req.body;
+  const { user_id } = req.params;
+
+  try {
+
+    let profile_image = null;
+    
+    if (req.file) {
+      const b64 = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+      const uploadResult = await cloudinary.uploader.upload(dataURI, { folder: "posts" });
+      profile_image = uploadResult.secure_url;
+    }
+
+    const result = await pool.query(
+      `UPDATE users
+       SET description = $1, profile_image = $2
+       WHERE user_id = $3
+       RETURNING *`,
+      [description, profile_image, user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'User updated successfully',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Error updating user' });
+  }
+});
+
 // ======================== LIST POSTS =========================
 app.get('/all-posts', async (_req, res) => {
   try {
