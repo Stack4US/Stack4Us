@@ -156,6 +156,7 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
   }
 });
 
+
 // ======================= LIST ANSWERS ========================
 app.get('/answers', async (_req, res) => {
   try {
@@ -166,6 +167,55 @@ app.get('/answers', async (_req, res) => {
     res.status(500).json({ error: 'Error fetching answer' });
   }
 });
+
+
+// Endpoint to create a answer 
+app.post('/answer', upload.single("image"), async (req, res) => {
+  const { description, user_id, post_id } = req.body;
+  let image = null;
+  // Basic validations
+  if (!description || description.trim() === '') {
+    return res.status(400).json({ error: 'Description is required' });
+  }
+  if (!user_id || isNaN(user_id)) {
+    return res.status(400).json({ error: 'Valid user_id is required' });
+  }
+  if (!post_id || isNaN(post_id)) {
+    return res.status(400).json({ error: 'Valid post_id is required' });
+  }
+  try {
+    // Verify that the post exists
+    const postExists = await pool.query('SELECT post_id FROM post WHERE post_id = $1', [post_id]);
+    if (postExists.rows.length === 0) {
+      return res.status(400).json({ error: 'Post does not exist' });
+    }
+    // Verify that the user exists
+    const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(400).json({ error: 'User does not exist' });
+    }
+    // If an image is provided, upload it to Cloudinary
+    if (req.file) {
+      const b64 = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: "answers",
+      });
+      image = uploadResult.secure_url;
+    }
+    // Insert answer
+    const result = await pool.query(
+      'INSERT INTO answer (description, user_id, post_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
+      [description.trim(), user_id, post_id, image]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error inserting answer:', err);
+    res.status(500).json({ error: 'Error inserting answer' });
+  }
+});
+
 
 // ========================= LISTEN ============================
 app.listen(PORT, () => {
