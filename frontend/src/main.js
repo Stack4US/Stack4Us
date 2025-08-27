@@ -1,29 +1,28 @@
 import isAuth from "./handleAuth/isAuth";
 import register from "./handleAuth/register";
 import login from "./handleAuth/login";
-// routes
+import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; //ablandoa
+
+// Rutas
 const routes = {
 
-  // Loged secction
+  // Sección autenticada
   "/dashboard": "./src/templates/dashboard.html",
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
 
-
-  // Login and Register
+  // Login y Registro
   "/register": "./src/templates/auth/register.html",
   "/login": "./src/templates/auth/login.html",
 };
 
 const url = 'http://localhost:3000';
 
-
 function setupNavigation() {
   const nav = document.getElementById("navUl");
-  
   if (!nav) return;
-  
-  const userRole = localStorage.getItem("role"); // This variable was created to handle views || admin || coder || team_leader
+
+  const userRole = localStorage.getItem("role"); // manejo futuro por rol
 
   if (!isAuth()) {
     nav.innerHTML = `
@@ -40,7 +39,7 @@ function setupNavigation() {
 }
 
 export async function navigate(pathname) {
-  // Allow access to login and register pages without authentication
+  // Gate para no autenticados (solo permitimos login y register)
   if (!isAuth() && pathname !== "/login" && pathname !== "/register") {
     pathname = "/login";
   }
@@ -50,15 +49,14 @@ export async function navigate(pathname) {
   document.getElementById("content").innerHTML = html;
   history.pushState({}, "", pathname);
 
-  if (pathname === "/login") login(url);
+  if (pathname === "/login")    login(url);
   if (pathname === "/register") register(url);
 
-  // Customer
-  // if (pathname === "/dashboard") comments();
-  // if (pathname === "/newCustomer") setupAddcustomerForm();
-  // if (pathname === "/editcustomer") setupEditcustomerForm()
+  if (pathname === "/dashboard") {                 //ablandoa
+    await renderDashboardAfterTemplateLoaded();    //ablandoa
+  }                                               //ablandoa
 
-  // Setup navigation after loading content
+  // Render de navegación después de cargar el template
   setupNavigation();
 }
 
@@ -66,26 +64,23 @@ document.body.addEventListener("click", (e) => {
   if (e.target.matches("[data-link]")) {
     e.preventDefault();
     const path = e.target.getAttribute("href");
-    
-    // Manejar logout
+
+    // Logout
     if (path === "/logout") {
       localStorage.setItem("Auth", "false");
       localStorage.removeItem("role");
       navigate("/login");
       return;
     }
-    
+
     navigate(path);
   }
 });
 
-// Initialize navigation when the page loads
+// Inicialización
 window.addEventListener("DOMContentLoaded", () => {
-  // Render nav (login/register or user links)
   setupNavigation();
 
-  // Load initial route safely: if the current pathname matches a known route, navigate there.
-  // Otherwise, send unauthenticated users to /login and authenticated users to /dashboard.
   const path = window.location.pathname;
   if (routes[path]) {
     navigate(path);
