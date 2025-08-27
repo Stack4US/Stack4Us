@@ -5,7 +5,7 @@ import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; //abland
 
 // Rutas
 const routes = {
-  "/dashboard": "./src/templates/dashboard.html",
+  "/dashboard": "./src/templates/dashboard.html", 
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
   "/about": "./src/templates/about.html",
@@ -27,6 +27,7 @@ function setupNavigation(currentPath) {
 
   if (onAppPages) {
     if (!isAuth()) { nav.innerHTML=''; return; }
+    // Petición: en PC quitar los enlaces (solo dejar Logout). En móvil mantenerlos.
     if (isMobile) {
       nav.innerHTML = `
         <a href="/dashboard" data-link class="${activeClass('/dashboard')}">Comentarios</a>

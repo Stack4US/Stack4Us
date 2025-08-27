@@ -2,9 +2,9 @@
   <aside class="sidebar">
     <div class="sidebar-scroll">
       <nav class="side-nav" aria-label="Main navigation">
-        <button class="side-item" onclick="history.pushState({},'', '/dashboard'); dispatchEvent(new PopStateEvent('popstate'));">Dashboard</button>
-        <button class="side-item" onclick="history.pushState({},'', '/ranking'); dispatchEvent(new PopStateEvent('popstate'));">Ranking</button>
-        <button class="side-item active" data-view="about">About Us</button>
+        <a class="side-item" data-link href="/dashboard">Dashboard</a>
+        <a class="side-item" data-link href="/ranking">Ranking</a>
+        <a class="side-item active" data-link href="/about">About Us</a>
       </nav>
     </div>
     <div class="user-card" id="sidebarUserCard">
