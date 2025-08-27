@@ -167,7 +167,7 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
       ? String(status).toLowerCase()
       : 'unsolved';
 
-    // Subir imagen a Cloudinary o null
+
     let imageUrl = null;
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
@@ -241,6 +241,40 @@ app.delete('/post/:id', async (req, res) => {
   }
 });
 
+
+// as user delete only my post 
+
+app.delete('/owns-posts/:post_id', async (req, res) => {
+  const { post_id } = req.params;
+  const { user_id } = req.user.user_id;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM post WHERE post_id = $1 AND user_id = $2 RETURNING *',
+      [post_id, user_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found or you do not have permission to delete this post' });
+    }
+    res.status.json({ message: 'Post deleted successfully' });
+  } catch (err) {
+    console.error(`Error deleting post ${post_id}:`, err);
+    res.status(500).json({ error: 'Error deleting post' });
+  }
+
+});
+
+// as user delete only my own aswers
+
+// as user edit only my own post
+
+// as user add raking to other aswers
+
+
+
+
+
+
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
   const { userId } = req.params;
@@ -260,11 +294,11 @@ app.get('/users/:userId/answers', async (req, res) => {
   }
 });
 
-// Endpoint to create a answer 
+// ======================= INSERT ANSWER ========================
 app.post('/answer', upload.single("image"), async (req, res) => {
   const { description, user_id, post_id } = req.body;
   let image = null;
-  // Basic validations
+
   if (!description || description.trim() === '') {
     return res.status(400).json({ error: 'Description is required' });
   }
@@ -274,18 +308,19 @@ app.post('/answer', upload.single("image"), async (req, res) => {
   if (!post_id || isNaN(post_id)) {
     return res.status(400).json({ error: 'Valid post_id is required' });
   }
+
   try {
-    // Verify that the post exists
+
     const postExists = await pool.query('SELECT post_id FROM post WHERE post_id = $1', [post_id]);
     if (postExists.rows.length === 0) {
       return res.status(400).json({ error: 'Post does not exist' });
     }
-    // Verify that the user exists
+  
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-    // If an image is provided, upload it to Cloudinary
+  
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
@@ -295,7 +330,7 @@ app.post('/answer', upload.single("image"), async (req, res) => {
       });
       image = uploadResult.secure_url;
     }
-    // Insert answer
+
     const result = await pool.query(
       'INSERT INTO answer (description, user_id, post_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), user_id, post_id, image]
