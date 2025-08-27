@@ -168,6 +168,43 @@ app.get('/answers', async (_req, res) => {
   }
 });
 
+// =================== GET ALL POSTS OF USER ==================
+app.get('/users/:userId/posts', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const result = await pool.query(
+      'SELECT * FROM post WHERE user_id = $1 ORDER BY post_id ASC',
+      [userId]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(`Error fetching posts for user ${userId}:`, err);
+    res.status(500).json({ error: 'Error fetching posts' });
+  }
+});
+
+// =================== GET ALL ANSWERS OF USER ==================
+app.get('/users/:userId/answers', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const result = await pool.query(
+      'SELECT * FROM answer WHERE user_id = $1 ORDER BY answer_id ASC',
+      [userId]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(`Error fetching answers for user ${userId}:`, err);
+    res.status(500).json({ error: 'Error fetching answers' });
+  }
+});
 
 // Endpoint to create a answer 
 app.post('/answer', upload.single("image"), async (req, res) => {
