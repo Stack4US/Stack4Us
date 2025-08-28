@@ -1,3 +1,4 @@
+// src/main.js
 import isAuth from "./handleAuth/isAuth";
 import register from "./handleAuth/register";
 import login from "./handleAuth/login";
@@ -5,7 +6,7 @@ import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; //abland
 
 // Rutas
 const routes = {
-  "/dashboard": "./src/templates/dashboard.html", 
+  "/dashboard": "./src/templates/dashboard.html",
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
   "/about": "./src/templates/about.html",
@@ -16,24 +17,28 @@ const routes = {
   "/login": "./src/templates/auth/login.html",
 };
 
-const url = 'http://localhost:3000';
+const url = "http://localhost:3000";
 
 function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
-  const appPages = ['/dashboard','/ranking','/about'];
+
+  const appPages = ["/dashboard", "/ranking", "/about"];
   const onAppPages = appPages.includes(currentPath);
   const isMobile = window.innerWidth < 1000;
-  const activeClass = (p) => currentPath === p ? 'active' : '';
+  const activeClass = (p) => (currentPath === p ? "active" : "");
 
   if (onAppPages) {
-    if (!isAuth()) { nav.innerHTML=''; return; }
-    // Petición: en PC quitar los enlaces (solo dejar Logout). En móvil mantenerlos.
+    if (!isAuth()) {
+      nav.innerHTML = "";
+      return;
+    }
+    // En PC mostrar solo Logout; en móvil todos los enlaces
     if (isMobile) {
       nav.innerHTML = `
-        <a href="/dashboard" data-link class="${activeClass('/dashboard')}">Comentarios</a>
-        <a href="/ranking" data-link class="${activeClass('/ranking')}">Ranking</a>
-        <a href="/about" data-link class="${activeClass('/about')}">About Us</a>
+        <a href="/dashboard" data-link class="${activeClass("/dashboard")}">Comentarios</a>
+        <a href="/ranking" data-link class="${activeClass("/ranking")}">Ranking</a>
+        <a href="/about" data-link class="${activeClass("/about")}">About Us</a>
         <a href="/logout" data-link id="close-sesion">Logout</a>
       `;
     } else {
@@ -47,7 +52,8 @@ function setupNavigation(currentPath) {
       <a href="/register" class="noAuth" data-link>Register</a>
     `;
     return;
-  } 
+  }
+
   nav.innerHTML = `
     <a href="/dashboard" data-link>Dashboard</a>
     <a href="/ranking" data-link>Ranking</a>
@@ -67,21 +73,30 @@ export async function navigate(pathname) {
   document.getElementById("content").innerHTML = html;
   history.pushState({}, "", pathname);
 
-  // Clase para layout con sidebar fijo
-  if (pathname === '/dashboard' || pathname === '/ranking') {
-    document.body.classList.add('has-dashboard');
+  // Sidebar/layout fijo (ahora también para /about)
+  if (pathname === "/dashboard" || pathname === "/ranking" || pathname === "/about") {
+    document.body.classList.add("has-dashboard");
   } else {
-    document.body.classList.remove('has-dashboard');
+    document.body.classList.remove("has-dashboard");
   }
 
-  if (pathname === "/login")    login(url);
+  if (pathname === "/login") login(url);
   if (pathname === "/register") register(url);
 
-  if (pathname === "/dashboard") {                 //ablandoa
-    await renderDashboardAfterTemplateLoaded();    //ablandoa
-  }                                               //ablandoa
+  // Mantengo EXACTO el hook del dashboard para no romper el post
+  if (pathname === "/dashboard") {
+    await renderDashboardAfterTemplateLoaded(); //ablandoa
+  }
+
+  // >>>>>>>>>>>>>>>> RANKING: cargar vista <<<<<<<<<<<<<<< //ablandoa
+  if (pathname === "/ranking") { //ablandoa
+    const mod = await import("./views/ranking.js"); //ablandoa
+    await mod.renderRankingAfterTemplateLoaded();   //ablandoa
+  } //ablandoa
+  // ------------------------------------------------------
+
   if (pathname === "/edit-post") {
-    const mod = await import('./views/editPost.js');
+    const mod = await import("./views/editPost.js");
     await mod.renderEditPostAfterTemplateLoaded();
   }
 
@@ -117,4 +132,5 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-window.addEventListener('resize', () => setupNavigation(window.location.pathname));
+// Recalcular el contenido del nav al redimensionar
+window.addEventListener("resize", () => setupNavigation(window.location.pathname));

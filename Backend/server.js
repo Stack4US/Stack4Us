@@ -37,7 +37,7 @@ function authenticateToken(req, res, next) {
   };
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET); //ablandoa
     req.user = decoded;
     next();
   } catch (err) {
@@ -88,7 +88,7 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
-  let token = generateToken(user);
+    let token = generateToken(user);
     const payload = {
       message: 'Login successful',
       user: {
@@ -99,7 +99,7 @@ app.post('/login', async (req, res) => {
         rol_id: user.rol_id
       }
     };
-  payload.token = token || 'fallback-token'; // siempre enviar un token para el frontend
+    payload.token = token || 'fallback-token'; // siempre enviar un token para el frontend
     res.status(200).json(payload);
   } catch (error) {
     console.error('Login error:', error);
@@ -596,6 +596,110 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
   }
 });
 
+
+// ======================= RATINGS & RANKING (READ ONLY) =======================
+// *** NUEVO: endpoints de lectura para promedios y ranking *** //ablandoa
+
+// Promedios por answer (avg + count)
+app.get('/answers/ratings-summary', async (_req, res) => { //ablandoa
+  try {
+    const q = `
+      SELECT
+        answer_id,
+        AVG(rating)::float AS avg_rating,
+        COUNT(*)::int     AS ratings_count
+      FROM answer_ratings
+      GROUP BY answer_id
+    `;
+    const r = await pool.query(q);
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /answers/ratings-summary:', err);
+    res.status(500).json({ error: 'Error fetching ratings summary' });
+  }
+}); //ablandoa
+
+// Mis calificaciones (para deshabilitar estrellas si ya califiqué)
+app.get('/my-answer-ratings', authenticateToken, async (req, res) => { //ablandoa
+  try {
+    const me = req.user.user_id;
+    const r = await pool.query(
+      `SELECT rating_id, answer_id, user_id, rating
+       FROM answer_ratings
+       WHERE user_id = $1`,
+      [me]
+    );
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /my-answer-ratings:', err);
+    res.status(500).json({ error: 'Error fetching my ratings' });
+  }
+}); //ablandoa
+
+// Resumen por usuario autor (promedio global de sus answers)
+app.get('/users/:user_id/rating/summary', async (req, res) => { //ablandoa
+  try {
+    const uid = parseInt(req.params.user_id, 10);
+    if (Number.isNaN(uid)) return res.status(400).json({ error: 'Invalid user_id' });
+
+    const q = `
+      SELECT
+        a.user_id,
+        AVG(ar.rating)::float            AS avg_rating,
+        COUNT(ar.rating)::int            AS ratings_count,
+        COUNT(DISTINCT a.answer_id)::int AS answers_with_votes
+      FROM answer a
+      LEFT JOIN answer_ratings ar ON ar.answer_id = a.answer_id
+      WHERE a.user_id = $1
+      GROUP BY a.user_id
+    `;
+    const r = await pool.query(q, [uid]);
+    if (!r.rows.length) {
+      return res.status(200).json({ user_id: uid, avg_rating: 0, ratings_count: 0, answers_with_votes: 0 });
+    }
+    res.status(200).json(r.rows[0]);
+  } catch (err) {
+    console.error('Error /users/:user_id/rating/summary:', err);
+    res.status(500).json({ error: 'Error fetching user rating summary' });
+  }
+}); //ablandoa
+
+// Ranking Top-N por mejor promedio. Empate: más answers con votos.
+// Filtros: ?min_votes=1&role=1&limit=10
+app.get('/ranking', async (req, res) => { //ablandoa
+  try {
+    const minVotes = Math.max(1, parseInt(req.query.min_votes ?? '1', 10));
+    const role = req.query.role ? String(req.query.role) : null; // '1'|'2'|'3'
+    const limit = Math.max(1, parseInt(req.query.limit ?? '10', 10));
+
+    const sql = `
+      SELECT
+        u.user_id,
+        u.user_name,
+        u.email,
+        u.rol_id,
+        u.profile_image,
+        AVG(ar.rating)::float            AS avg_rating,
+        COUNT(ar.rating)::int            AS ratings_count,
+        COUNT(DISTINCT a.answer_id)::int AS answers_with_votes
+      FROM users u
+      JOIN answer a ON a.user_id = u.user_id
+      LEFT JOIN answer_ratings ar ON ar.answer_id = a.answer_id
+      ${role ? 'WHERE u.rol_id = $1' : ''}
+      GROUP BY u.user_id
+      HAVING COUNT(ar.rating) >= ${minVotes}
+      ORDER BY avg_rating DESC NULLS LAST,
+               answers_with_votes DESC,
+               u.user_id ASC
+      LIMIT ${limit}
+    `;
+    const r = role ? await pool.query(sql, [role]) : await pool.query(sql);
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /ranking:', err);
+    res.status(500).json({ error: 'Error building ranking' });
+  }
+}); //ablandoa
 
 
 // ========================= LISTEN ============================
