@@ -3,6 +3,8 @@ import cors from 'cors';
 import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
 import { cloudinary, upload } from './src/config/cloudinary_config.js';
+import jwt from 'jsonwebtoken';
+import 'dotenv/config';
 
 const app = express();
 const PORT = 3000;
@@ -10,6 +12,32 @@ const PORT = 3000;
 // Middlewares
 app.use(express.json());
 app.use(cors());
+
+function generateToken(user) {
+  return jwt.sign({ 
+    user_id: user.user_id, 
+    email: user.email,
+    rol: user.rol_id }, 
+    process.env.JWT_SECRET, { expiresIn: '5h' }
+  );
+}
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' })
+  };
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+}
 
 // ========================= REGISTER =========================
 app.post('/register', async (req, res) => {
@@ -54,8 +82,11 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
+    const token = generateToken(user);
+
     res.status(200).json({
       message: 'Login successful',
+      token,
       user: {
         id: user.user_id,
         user_id: user.user_id,
@@ -68,6 +99,8 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// ======================== ENDPOINTS FOR USERS ========================
 
 // ======================= LIST USERS ==========================
 app.get('/Users', async (_req, res) => {
@@ -118,6 +151,187 @@ app.post('/edit-user/:user_id', upload.single("image"), async (req, res) => {
   }
 });
 
+// =================== GET ALL POSTS OF USER ==================
+app.get('/users/:userId/posts', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const result = await pool.query(
+      'SELECT * FROM post WHERE user_id = $1 ORDER BY post_id ASC',
+      [userId]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(`Error fetching posts for user ${userId}:`, err);
+    res.status(500).json({ error: 'Error fetching posts' });
+  }
+});
+
+// ======================== DELETE OWN POST AS USER========================
+app.delete('/owns-posts/:post_id', authenticateToken, async (req, res) => {
+  const post_id = parseInt(req.params.post_id, 10);
+  const user_id = req.user.user_id;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM post WHERE post_id = $1 AND user_id = $2 RETURNING *',
+      [post_id, user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Post not found or you do not have permission to delete this post' });
+    }
+
+    res.status(200).json({ message: 'Post deleted successfully', deleted: result.rows[0] });
+  } catch (err) {
+    console.error(`Error deleting post ${post_id}:`, err);
+    res.status(500).json({ error: 'Error deleting post' });
+  }
+});
+
+// ======================== DELETE OWN ANSWER AS USER========================
+app.delete('/owns-answers/:answer_id', authenticateToken, async (req, res) => {
+  const answer_id = parseInt(req.params.answer_id, 10);
+  const user_id = req.user.user_id;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM answer WHERE answer_id = $1 AND user_id = $2 RETURNING *',
+      [answer_id, user_id]
+    );  
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Answer not found or you do not have permission to delete this answer' });
+    }
+    res.status(200).json({ message: 'Answer deleted successfully', deleted: result.rows[0] });
+  } catch (err) {
+    console.error(`Error deleting answer ${answer_id}:`, err);
+    res.status(500).json({ error: 'Error deleting answer' });
+  }
+});
+
+// ======================== EDIT OWN POST AS USER========================
+app.put('/owns-posts/:post_id', authenticateToken, upload.single("image"), async (req, res) => {
+  const post_id = parseInt(req.params.post_id, 10);
+  const user_id = req.user.user_id; 
+  const { type, title, description, status } = req.body;
+  const image = req.file ? req.file.path : null;
+
+  try {
+    const postResult = await pool.query(
+      "SELECT * FROM post WHERE post_id = $1 AND user_id = $2",
+      [post_id, user_id]
+    );
+
+    if (postResult.rows.length === 0) {
+      return res.status(403).json({ error: "You dont have permissions to delete this post" });
+    }
+
+    const updateQuery = `
+      UPDATE post
+      SET 
+        type = COALESCE($1, type),
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        status = COALESCE($4, status),
+        image = COALESCE($5, image),
+        date = NOW()
+      WHERE post_id = $6 AND user_id = $7
+      RETURNING *;
+    `;
+
+    const updatedPost = await pool.query(updateQuery, [
+      type || null,
+      title || null,
+      description || null,
+      status || null,
+      image || null,
+      post_id,
+      user_id
+    ]);
+
+    res.json({
+      message: "Post updated successfully",
+      post: updatedPost.rows[0]
+    });
+
+  } catch (err) {
+    console.error("Error updating post:", err);
+    res.status(500).json({ error: "Error server" });
+  }
+});
+
+// ======================= RATE ANSWER AS USER ========================
+app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
+  const answer_id = parseInt(req.params.answer_id, 10);
+  const user_id = req.user.user_id;
+  const { rating } = req.body;
+
+  try {
+    // 1. Verificar que la respuesta exista
+    const answerResult = await pool.query(
+      'SELECT * FROM answer WHERE answer_id = $1',
+      [answer_id]
+    );
+    if (answerResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Answer dont found' });
+    }
+
+    const answer = answerResult.rows[0];
+
+    // 2. No permitir autocalificación
+    if (answer.user_id === user_id) {
+      return res.status(403).json({ error: 'You cant rating your own answer' });
+    }
+
+    // 3. Verificar si ya calificó antes
+    const existingRating = await pool.query(
+      'SELECT * FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
+      [answer_id, user_id]
+    );
+
+    if (existingRating.rows.length > 0) {
+      return res.status(400).json({ error: 'This answer is already rating' });
+    }
+
+    // 4. Guardar nueva calificación
+    await pool.query(
+      'INSERT INTO answer_ratings (answer_id, user_id, rating) VALUES ($1, $2, $3)',
+      [answer_id, user_id, rating]
+    );
+
+    res.status(201).json({ message: 'Rating register succesfully' });
+
+  } catch (error) {
+    console.error('Error rating answer:', error);
+    res.status(500).json({ error: 'Error in server' });
+  }
+});
+
+
+// =================== GET ALL ANSWERS OF USER ==================
+app.get('/users/:userId/answers', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const result = await pool.query(
+      'SELECT * FROM answer WHERE user_id = $1 ORDER BY answer_id ASC',
+      [userId]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(`Error fetching answers for user ${userId}:`, err);
+    res.status(500).json({ error: 'Error fetching answers' });
+  }
+});
+
+// ======================== ENDPOINTS FOR POSTS ========================
+
 // ======================== LIST POSTS =========================
 app.get('/all-posts', async (_req, res) => {
   try {
@@ -167,7 +381,7 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
       ? String(status).toLowerCase()
       : 'unsolved';
 
-    // Subir imagen a Cloudinary o null
+
     let imageUrl = null;
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
@@ -194,37 +408,6 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
   }
 });
 
-
-// ======================= LIST ANSWERS ========================
-app.get('/answers', async (_req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM answer');
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error fetching answers:', err);
-    res.status(500).json({ error: 'Error fetching answer' });
-  }
-});
-
-// =================== GET ALL POSTS OF USER ==================
-app.get('/users/:userId/posts', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
-    if (userExists.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-    const result = await pool.query(
-      'SELECT * FROM post WHERE user_id = $1 ORDER BY post_id ASC',
-      [userId]
-    );
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error(`Error fetching posts for user ${userId}:`, err);
-    res.status(500).json({ error: 'Error fetching posts' });
-  }
-});
-
 // ======================== DELETE POST ========================
 app.delete('/post/:id', async (req, res) => {
   const { id } = req.params;
@@ -241,30 +424,25 @@ app.delete('/post/:id', async (req, res) => {
   }
 });
 
-// =================== GET ALL ANSWERS OF USER ==================
-app.get('/users/:userId/answers', async (req, res) => {
-  const { userId } = req.params;
+
+// ======================= LIST ANSWERS ========================
+app.get('/answers', async (_req, res) => {
   try {
-    const userExists = await pool.query('SELECT 1 FROM users WHERE user_id = $1', [userId]);
-    if (userExists.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-    const result = await pool.query(
-      'SELECT * FROM answer WHERE user_id = $1 ORDER BY answer_id ASC',
-      [userId]
-    );
+    const result = await pool.query('SELECT * FROM answer');
     res.status(200).json(result.rows);
   } catch (err) {
-    console.error(`Error fetching answers for user ${userId}:`, err);
-    res.status(500).json({ error: 'Error fetching answers' });
+    console.error('Error fetching answers:', err);
+    res.status(500).json({ error: 'Error fetching answer' });
   }
 });
 
-// Endpoint to create a answer 
+// ============================ ENDPOINTS FOR ANSWERS ========================
+
+// ======================= INSERT ANSWER ========================
 app.post('/answer', upload.single("image"), async (req, res) => {
   const { description, user_id, post_id } = req.body;
   let image = null;
-  // Basic validations
+
   if (!description || description.trim() === '') {
     return res.status(400).json({ error: 'Description is required' });
   }
@@ -274,18 +452,19 @@ app.post('/answer', upload.single("image"), async (req, res) => {
   if (!post_id || isNaN(post_id)) {
     return res.status(400).json({ error: 'Valid post_id is required' });
   }
+
   try {
-    // Verify that the post exists
+
     const postExists = await pool.query('SELECT post_id FROM post WHERE post_id = $1', [post_id]);
     if (postExists.rows.length === 0) {
       return res.status(400).json({ error: 'Post does not exist' });
     }
-    // Verify that the user exists
+  
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-    // If an image is provided, upload it to Cloudinary
+  
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
@@ -295,7 +474,7 @@ app.post('/answer', upload.single("image"), async (req, res) => {
       });
       image = uploadResult.secure_url;
     }
-    // Insert answer
+
     const result = await pool.query(
       'INSERT INTO answer (description, user_id, post_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), user_id, post_id, image]
