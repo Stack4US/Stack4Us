@@ -126,7 +126,6 @@ export async function modifyPost(postId, body, file, user) {
     if (file) {
       const b64 = file.buffer.toString("base64");
       const dataURI = `data:${file.mimetype};base64,${b64}`;
-      // cloudinary must be imported or required at the top of the file
       const uploadResult = await uploadImageIfNeeded(dataURI, "posts");
       imageUrl = uploadResult.secure_url;
     }

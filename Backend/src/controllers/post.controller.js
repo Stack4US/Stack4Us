@@ -82,5 +82,3 @@ export async function getUserPosts(req, res, next) {
         next(err);
     }
 }
-
-// deleteOwnPost, updateOwnPost, getUserPosts similar -> obtén user_id de req.user
