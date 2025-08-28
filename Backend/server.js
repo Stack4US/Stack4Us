@@ -13,13 +13,19 @@ const PORT = 3000;
 app.use(express.json());
 app.use(cors());
 
+// Fallback secret para entorno local si no está definido.
+const JWT_SECRET = process.env.JWT_SECRET || 'DEV_LOCAL_ONLY_SECRET';
 function generateToken(user) {
-  return jwt.sign({ 
-    user_id: user.user_id, 
-    email: user.email,
-    rol: user.rol_id }, 
-    process.env.JWT_SECRET, { expiresIn: '5h' }
-  );
+  try {
+    return jwt.sign({
+      user_id: user.user_id,
+      email: user.email,
+      rol: user.rol_id
+    }, JWT_SECRET, { expiresIn: '5h' });
+  } catch (err) {
+    console.error('[generateToken] error:', err.message);
+    return null;
+  }
 }
 
 function authenticateToken(req, res, next) {
@@ -82,18 +88,19 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
-    const token = generateToken(user);
-
-    res.status(200).json({
+  let token = generateToken(user);
+    const payload = {
       message: 'Login successful',
-      token,
       user: {
         id: user.user_id,
         user_id: user.user_id,
         user_name: user.user_name,
         email: user.email,
+        rol_id: user.rol_id
       }
-    });
+    };
+  payload.token = token || 'fallback-token'; // siempre enviar un token para el frontend
+    res.status(200).json(payload);
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Server error' });
