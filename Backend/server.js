@@ -1,4 +1,4 @@
-import express from 'express';
+
 import cors from 'cors';
 import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
