@@ -5,19 +5,23 @@
 }
 
 .form_login {
+    /* Layout */
     display: flex;
-    justify-content: center;
     flex-direction: column;
-    padding: 30px;
+    justify-content: center;
+    /* Spacing */
     margin: 20px;
+    padding: 30px;
+    /* Typography */
     font-family: "Poppins", sans-serif;
-    box-shadow: 1px 1px 5px 1px rgba(0, 0, 0, 0.1);
+    /* Visual */
     border-radius: 10px;
+    box-shadow: 1px 1px 5px 1px rgba(0,0,0,0.1);
 }
 .form_login .title_form {
     display: flex;
-    justify-content: center;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
     margin: 10px;
 }
@@ -28,31 +32,30 @@
 }
 
 .title_form p {
-    font-size: 15px;
     margin-top: 15px;
+    font-size: 15px;
 }
 
 .form_login label {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: 10px 0;
     font-size: 14px;
 }
 
 .form_login input {
     padding: 16px;
-    border-radius: 10px;
-    background-color: #E4E4E4;
     border: none;
+    border-radius: 10px;
+    background:#E4E4E4;
 }
 
 .form_login button {
-    margin-top: 20px;
-    padding: 16px;
-    border-radius: 10px;
-    background-color: #5E67CD;
-    color: #fff;
-    font-size: 16px;
-    border: none;
+    margin-top:20px;
+    padding:16px;
+    border:none;
+    border-radius:10px;
+    background:#5E67CD;
+    color:#fff;
+    font-size:16px;
 }
 
 .footer_form {
@@ -69,32 +72,24 @@
     text-decoration: none;
 }
 
-@media screen and (min-width: 600px) {
+@media (min-width:600px){
     .form_login {
         max-width: 500px;
         margin: 40px auto;
     }
-
     .title_form h1 {
-    font-size: 25px;
-    font-weight: bold;
+        font-size: 25px;
     }
-
     .title_form p {
-    font-size: 17px;
-    margin-top: 15px;
-}
-
-.form_login label {
-    font-size: 16px;
-}
-
-.form_login input {
-    padding: 20px;
-}
-
-.form_login button {
-    padding: 20px;
-}
-
+        font-size: 17px;
+    }
+    .form_login label {
+        font-size: 16px;
+    }
+    .form_login input {
+        padding: 20px;
+    }
+    .form_login button {
+        padding: 20px;
+    }
 }

@@ -1,0 +1,81 @@
+/* Profile page styles (ordered: layout/box -> spacing -> typography -> visual -> misc) */
+.profile-page {
+  /* Layout */
+  max-width: 860px;
+  /* Spacing */
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+.profile-card {
+  /* Layout */
+  display: flex;
+  gap: 32px;
+  /* Spacing */
+  padding: 28px 32px;
+  /* Visual */
+  background: #fff;
+  border: 1px solid #e2e2e5;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px -4px rgba(0,0,0,0.06);
+}
+
+.profile-avatar-wrap {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Box */
+  width: 160px;
+}
+
+.profile-avatar {
+  /* Box */
+  width: 140px;
+  height: 140px;
+  /* Visual */
+  border:1px solid #ddd;
+  border-radius: 50%;
+  background:#f4f4f6;
+  object-fit: cover;
+}
+
+.profile-info h2 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+.profile-info .muted {
+  margin: 0 0 4px;
+  color: #6a6d75;
+}
+.profile-info .small {
+  font-size: 13px;
+}
+.profile-section {
+  margin-top: 8px;
+}
+.profile-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.description {
+  margin: 4px 0 8px;
+  line-height: 1.4;
+}
+.btn-small {
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#formEditDesc textarea {
+  font-family: inherit;
+}
+.back-btn {
+  margin-top: 24px;
+}
+@media (max-width: 680px){
+  .profile-card { flex-direction: column; align-items: center; }
+  .profile-avatar-wrap { width: auto; }
+  .profile-avatar { width: 120px; height: 120px; }
+}

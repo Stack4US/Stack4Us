@@ -10,6 +10,7 @@ const routes = {
   "/ranking": "./src/templates/ranking.html",
   "/about": "./src/templates/about.html",
   "/edit-post": "./src/templates/edit-post.html",
+  "/profile": "./src/templates/profile.html",
 
   // Login y Registro
   "/register": "./src/templates/auth/register.html",
@@ -78,11 +79,20 @@ export async function navigate(pathname) {
   if (pathname === "/register") register(url);
 
   if (pathname === "/dashboard") {                 //ablandoa
+    if (!document.querySelector('link[data-dashboard-css]')) { // load css once
+      const l = document.createElement('link');
+      l.rel='stylesheet'; l.href='/src/css/dashboard.css'; l.setAttribute('data-dashboard-css','1');
+      document.head.appendChild(l);
+    }
     await renderDashboardAfterTemplateLoaded();    //ablandoa
   }                                               //ablandoa
   if (pathname === "/edit-post") {
     const mod = await import('./views/editPost.js');
     await mod.renderEditPostAfterTemplateLoaded();
+  }
+  if (pathname === "/profile") {
+    const mod = await import('./views/profile.js');
+    await mod.renderProfileAfterTemplateLoaded();
   }
 
   // Render de navegación después de cargar el template
@@ -103,6 +113,12 @@ document.body.addEventListener("click", (e) => {
     }
 
     navigate(path);
+  }
+  // Click en tarjeta usuario sidebar -> perfil
+  const uc = e.target.closest('#sidebarUserCard');
+  if (uc) {
+    e.preventDefault();
+    navigate('/profile');
   }
 });
 
