@@ -270,7 +270,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
   const { rating } = req.body;
 
   try {
-    // 1. Verificar que la respuesta exista
     const answerResult = await pool.query(
       'SELECT * FROM answer WHERE answer_id = $1',
       [answer_id]
@@ -281,12 +280,10 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
 
     const answer = answerResult.rows[0];
 
-    // 2. No permitir autocalificación
     if (answer.user_id === user_id) {
       return res.status(403).json({ error: 'You cant rating your own answer' });
     }
 
-    // 3. Verificar si ya calificó antes
     const existingRating = await pool.query(
       'SELECT * FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
       [answer_id, user_id]
@@ -296,7 +293,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'This answer is already rating' });
     }
 
-    // 4. Guardar nueva calificación
     await pool.query(
       'INSERT INTO answer_ratings (answer_id, user_id, rating) VALUES ($1, $2, $3)',
       [answer_id, user_id, rating]
@@ -309,7 +305,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error in server' });
   }
 });
-
 
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
