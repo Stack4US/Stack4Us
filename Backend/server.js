@@ -277,7 +277,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
   const { rating } = req.body;
 
   try {
-    // 1. Verificar que la respuesta exista
     const answerResult = await pool.query(
       'SELECT * FROM answer WHERE answer_id = $1',
       [answer_id]
@@ -288,12 +287,10 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
 
     const answer = answerResult.rows[0];
 
-    // 2. No permitir autocalificación
     if (answer.user_id === user_id) {
       return res.status(403).json({ error: 'You cant rating your own answer' });
     }
 
-    // 3. Verificar si ya calificó antes
     const existingRating = await pool.query(
       'SELECT * FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
       [answer_id, user_id]
@@ -303,7 +300,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'This answer is already rating' });
     }
 
-    // 4. Guardar nueva calificación
     await pool.query(
       'INSERT INTO answer_ratings (answer_id, user_id, rating) VALUES ($1, $2, $3)',
       [answer_id, user_id, rating]
@@ -316,7 +312,6 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error in server' });
   }
 });
-
 
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
@@ -508,6 +503,100 @@ app.delete('/answer/:id', async (req, res) => {
     res.status(500).json({ error: 'Error deleting answer' });
   }
 });
+
+
+// ======================== ADD CONVERSATION ========================
+app.post('/conversation', upload.single("image"), async (req, res) => {
+  const { description, user_id, answer_id } = req.body;
+  let image = null;
+
+  const uid = parseInt(user_id, 10);
+  const aid = parseInt(answer_id, 10);
+
+  if (!description || description.trim() === '') {
+    return res.status(400).json({ error: 'Description is required' });
+  }
+  if (!uid || isNaN(uid)) {
+    return res.status(400).json({ error: 'Valid user_id is required' });
+  }
+  if (!aid || isNaN(aid)) {
+    return res.status(400).json({ error: 'Valid answer_id is required' });
+  }
+
+  try {
+
+    const answerExists = await pool.query('SELECT answer_id FROM answer WHERE answer_id = $1', [aid]);
+    if (answerExists.rows.length === 0) {
+      return res.status(400).json({ error: 'Answer does not exist' });
+    }
+  
+    const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [uid]);
+    if (userExists.rows.length === 0) {
+      return res.status(400).json({ error: 'User does not exist' });
+    }
+  
+    if (req.file && req.file.buffer) {
+      const b64 = req.file.buffer.toString("base64");
+      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: "conversation",
+      });
+      image = uploadResult.secure_url;
+    }
+
+    const result = await pool.query(
+      'INSERT INTO conversation (description, user_id, answer_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
+      [description.trim(), uid, aid, image]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error inserting conversation:', err);
+    res.status(500).json({ error: 'Error inserting conversation' });
+  }
+});
+
+// ======================= LIST CONVERSATIONS ========================
+app.get('/conversations', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM conversation ORDER BY conversation_id DESC');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching conversations:', err);
+    res.status(500).json({ error: 'Error fetching conversations' });
+  }
+});
+
+// ======================== DELETE OWN CONVERSATION AS USER ========================
+app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req, res) => {
+  const conversation_id = parseInt(req.params.conversation_id, 10);
+  const user_id = req.user.user_id;
+
+  if (isNaN(conversation_id)) {
+    return res.status(400).json({ error: 'Invalid conversation_id' });
+  }
+
+  try {
+    const check = await pool.query(
+      'SELECT * FROM conversation WHERE conversation_id = $1 AND user_id = $2',
+      [conversation_id, user_id]
+    );
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Conversation not found or you do not have permission to delete this conversation' });
+    }
+    const result = await pool.query(
+      'DELETE FROM conversation WHERE conversation_id = $1 RETURNING *',
+      [conversation_id]
+    );
+
+    res.status(200).json({ message: 'Conversation message deleted successfully', deleted: result.rows[0] });
+  } catch (err) {
+    console.error(`Error deleting conversation ${conversation_id}:`, err);
+    res.status(500).json({ error: 'Error deleting conversation' });
+  }
+});
+
+
 
 // ========================= LISTEN ============================
 app.listen(PORT, () => {
