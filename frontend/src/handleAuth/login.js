@@ -66,8 +66,8 @@ function login(url) {
               let r = String(payloadJson.rol);
               // mapear numerico -> alias //ablandoa
               if (r === '1') r = 'coder';
-              else if (r === '2') r = 'team_leader';
-              else if (r === '3') r = 'admin';
+              else if (r === '2') r = 'admin';
+              else if (r === '3') r = 'team_leader';
               localStorage.setItem('role', r); //ablandoa
             }
           } catch (e) { console.warn('decode jwt fallo', e); } //ablandoa

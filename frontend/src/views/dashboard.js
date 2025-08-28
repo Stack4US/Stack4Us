@@ -21,14 +21,14 @@ function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
   // Debug temporal para inspeccionar permisos en consola //ablandoa
   try { console.debug('[postCard perms]', {post_id: p.post_id, p_user_id: p.user_id, p_user_id_type: typeof p.user_id, me, me_type: typeof me, userRole, isOwner, canEdit, canDelete}); } catch(_) {}
   const hasImg = Boolean(p.image && String(p.image).trim()); //ablandoa
-  const thumb = hasImg
-    ? `<img src="${p.image}" alt="post image" style="width:96px;height:96px;object-fit:cover;border-radius:8px;background:#f3f3f3" onerror="this.style.display='none'">`
-    : `<div style="width:96px;height:96px;border-radius:8px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-size:12px;color:#888">sin imagen</div>`; //ablandoa
+    const imageBox = hasImg
+      ? `<div class="post-image-box" data-full="${p.image}"><img src="${p.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
+    : `<div class="post-image-box is-empty">IMG</div>`; // caja amplia para imagen o placeholder //ablandoa
   const answers = answersByPost.get(p.post_id) || []; // respuestas agrupadas //ablandoa
   const answersHTML = answers.length
     ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>`<div class='answer-item' style='font-size:12px;margin:4px 0;padding:6px 8px;background:#f7f7f9;border:1px solid #eee;border-radius:6px'><b>#${a.user_id}</b>: ${a.description || ''}</div>`).join('')}</div>`
     : ''; //ablandoa
-  return `<article class="card" style="padding:12px"><div style="display:flex;gap:12px">${thumb}<div style="flex:1 1 auto"><h4 style="margin:0">${p.title ?? ''}</h4><div style="font-size:12px;color:#666;margin:4px 0"><span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor #${p.user_id ?? '-'}</span></div><p style="margin:6px 0 0">${p.description ?? ''}</p><div class="post-actions" style="display:flex;gap:6px;margin-top:8px">${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}</div>${answersHTML}<form class='answer-form' data-post='${p.post_id}' style='margin-top:10px;display:flex;gap:6px'><input name='description' placeholder='Add answer...' style='flex:1;padding:4px 6px;font-size:12px'><button type='submit' style='font-size:12px;padding:4px 8px'>Enviar</button></form></div></div></article>`; //ablandoa
+  return `<article class="card post-card"><h4>${p.title ?? ''}</h4><div class="post-meta"><span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor #${p.user_id ?? '-'}</span></div><p class="post-desc">${p.description ?? ''}</p>${imageBox}<div class="post-actions">${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}</div>${answersHTML}<form class='answer-form' data-post='${p.post_id}'><input name='description' placeholder='Add answer...'><button type='submit'>Enviar</button></form></article>`; //ablandoa
 }
 
 function answerItem(a) {
@@ -70,6 +70,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
     const answersByPost = groupAnswers(answersCache);
     if (postsEl) {
       postsEl.innerHTML = merged.length ? merged.slice().reverse().map(p=>postCard(p, answersByPost)).join('') : '<div class="card" style="padding:10px">No posts.</div>';
+  attachImageLightboxHandlers();
     }
   }
   async function loadAnswers() { // carga todas las respuestas //ablandoa
@@ -175,4 +176,47 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
   }
   await loadAnswers();
   await loadPosts();
+  setupLightboxRoot();
+}
+
+// ---- Lightbox para imágenes de posts ---- //ablandoa
+function setupLightboxRoot(){
+  if(document.getElementById('img-lightbox-root')) return;
+  const div = document.createElement('div');
+  div.id = 'img-lightbox-root';
+  div.innerHTML = `\n    <div class="img-lightbox-backdrop" data-close="lb">\n      <figure class="img-lightbox-figure">\n        <img alt="Imagen del post" class="img-lightbox-img" />\n        <figcaption class="img-lightbox-caption"></figcaption>\n        <button type="button" class="img-lightbox-close" data-close="lb" aria-label="Cerrar">×</button>\n      </figure>\n    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e=>{ if(e.target.dataset.close==='lb'){ closeLightbox(); }});
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+}
+
+function openLightbox(src, caption=''){
+  const root = document.getElementById('img-lightbox-root');
+  if(!root) return;
+  root.querySelector('.img-lightbox-img').src = src;
+  const capEl = root.querySelector('.img-lightbox-caption');
+  if(caption){ capEl.textContent = caption; capEl.style.display='block'; } else { capEl.textContent=''; capEl.style.display='none'; }
+  root.classList.add('is-open');
+  document.body.classList.add('lightbox-open');
+}
+function closeLightbox(){
+  const root = document.getElementById('img-lightbox-root');
+  if(!root) return;
+  root.classList.remove('is-open');
+  document.body.classList.remove('lightbox-open');
+}
+function attachImageLightboxHandlers(){
+  const boxes = document.querySelectorAll('.post-image-box[data-full]');
+  boxes.forEach(box=>{
+    if(box.dataset.lbBound) return; // evitar duplicar //ablandoa
+    box.dataset.lbBound = '1';
+    box.style.cursor = box.classList.contains('is-empty') ? 'default' : 'zoom-in';
+    if(!box.classList.contains('is-empty')){
+      box.addEventListener('click', ()=>{
+        const src = box.dataset.full;
+        const caption = box.closest('.post-card')?.querySelector('h4')?.textContent || '';
+        openLightbox(src, caption);
+      });
+    }
+  });
 }

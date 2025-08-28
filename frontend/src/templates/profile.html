@@ -1,0 +1,26 @@
+<div class="profile-page">
+  <div class="profile-card">
+    <div class="profile-avatar-wrap">
+      <img id="profileAvatar" alt="avatar" class="profile-avatar" />
+    </div>
+    <div class="profile-info">
+      <h2 id="profileUserName">User</h2>
+      <p id="profileRole" class="muted">role</p>
+      <p id="profileEmail" class="muted small"></p>
+      <div class="profile-section">
+  <h3>About me</h3>
+  <p id="profileDescription" class="description"></p>
+        <button id="btnEditDesc" type="button" class="btn-small">Edit description</button>
+        <form id="formEditDesc" autocomplete="off">
+          <textarea id="descInput" rows="4" maxlength="500" placeholder="Write something about you (max 500 chars)"></textarea>
+          <div class="desc-actions">
+            <button type="submit">Save</button>
+            <button type="button" id="btnCancelDesc">Cancel</button>
+          </div>
+          <small id="descHint" class="hint"></small>
+        </form>
+      </div>
+    </div>
+  </div>
+  <button data-link href="/dashboard" class="back-btn">Back</button>
+</div>
