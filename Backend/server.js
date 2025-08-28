@@ -549,6 +549,17 @@ app.post('/conversation', upload.single("image"), async (req, res) => {
   }
 });
 
+// ======================= LIST CONVERSATIONS ========================
+app.get('/conversations', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM conversation ORDER BY conversation_id DESC');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching conversations:', err);
+    res.status(500).json({ error: 'Error fetching conversations' });
+  }
+});
+
 // ======================== DELETE OWN CONVERSATION AS USER ========================
 app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req, res) => {
   const conversation_id = parseInt(req.params.conversation_id, 10);
