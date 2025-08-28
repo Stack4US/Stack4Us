@@ -1,20 +1,40 @@
-<div class="ranking-container">
-    <h1>Ranking de Usuarios</h1>
-    <div class="ranking-list">
-        <div class="ranking-item">
-            <span class="position">1</span>
-            <span class="username">Usuario1</span>
-            <span class="points">1500 puntos</span>
-        </div>
-        <div class="ranking-item">
-            <span class="position">2</span>
-            <span class="username">Usuario2</span>
-            <span class="points">1200 puntos</span>
-        </div>
-        <div class="ranking-item">
-            <span class="position">3</span>
-            <span class="username">Usuario3</span>
-            <span class="points">1000 puntos</span>
+<div class="dashboard-shell">
+  <aside class="sidebar">
+    <div class="sidebar-scroll">
+      <nav class="side-nav" aria-label="Main navigation">
+            <a class="side-item" data-link href="/dashboard">Comments</a>
+            <a class="side-item active" data-link href="/ranking">Ranking</a>
+            <a class="side-item" data-link href="/about">About Us</a>
+      </nav>
+    </div>
+    <div class="user-card" id="sidebarUserCard">
+      <div class="avatar" id="sidebarAvatar">👤</div>
+      <div class="user-meta">
+        <span class="user-name" id="navUserName">User</span>
+        <span class="user-role" id="navUserRole">Role</span>
+      </div>
+    </div>
+  </aside>
+  <div class="dashboard-main">
+    <div class="ranking-container">
+        <h1>User Ranking</h1>
+        <div class="ranking-list">
+            <div class="ranking-item">
+                <span class="position">1</span>
+                <span class="username">User1</span>
+                <span class="points">1500 pts</span>
+            </div>
+            <div class="ranking-item">
+                <span class="position">2</span>
+                <span class="username">User2</span>
+                <span class="points">1200 pts</span>
+            </div>
+            <div class="ranking-item">
+                <span class="position">3</span>
+                <span class="username">User3</span>
+                <span class="points">1000 pts</span>
+            </div>
         </div>
     </div>
+  </div>
 </div>

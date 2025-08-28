@@ -5,11 +5,10 @@ import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; //abland
 
 // Rutas
 const routes = {
-
-  // Sección autenticada
-  "/dashboard": "./src/templates/dashboard.html",
+  "/dashboard": "./src/templates/dashboard.html", 
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
+  "/about": "./src/templates/about.html",
 
   // Login y Registro
   "/register": "./src/templates/auth/register.html",
@@ -18,23 +17,42 @@ const routes = {
 
 const url = 'http://localhost:3000';
 
-function setupNavigation() {
+function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
+  const appPages = ['/dashboard','/ranking','/about'];
+  const onAppPages = appPages.includes(currentPath);
+  const isMobile = window.innerWidth < 1000;
+  const activeClass = (p) => currentPath === p ? 'active' : '';
 
+  if (onAppPages) {
+    if (!isAuth()) { nav.innerHTML=''; return; }
+    // Petición: en PC quitar los enlaces (solo dejar Logout). En móvil mantenerlos.
+    if (isMobile) {
+      nav.innerHTML = `
+        <a href="/dashboard" data-link class="${activeClass('/dashboard')}">Comentarios</a>
+        <a href="/ranking" data-link class="${activeClass('/ranking')}">Ranking</a>
+        <a href="/about" data-link class="${activeClass('/about')}">About Us</a>
+        <a href="/logout" data-link id="close-sesion">Logout</a>
+      `;
+    } else {
+      nav.innerHTML = `<a href="/logout" data-link id="close-sesion">Logout</a>`;
+    }
+    return;
+  }
 
   if (!isAuth()) {
     nav.innerHTML = `
       <a href="/register" class="noAuth" data-link>Register</a>
     `;
     return;
-  } else {
-    nav.innerHTML = `
-      <a href="/dashboard" data-link>Comentarios</a>
-      <a href="/ranking" data-link>Ranking</a>
-      <a href="/logout" data-link id="close-sesion">Logout</a>
-    `;
-  }
+  } 
+  nav.innerHTML = `
+    <a href="/dashboard" data-link>Dashboard</a>
+    <a href="/ranking" data-link>Ranking</a>
+    <a href="/about" data-link>About Us</a>
+    <a href="/logout" data-link id="close-sesion">Logout</a>
+  `;
 }
 
 export async function navigate(pathname) {
@@ -48,6 +66,13 @@ export async function navigate(pathname) {
   document.getElementById("content").innerHTML = html;
   history.pushState({}, "", pathname);
 
+  // Clase para layout con sidebar fijo
+  if (pathname === '/dashboard' || pathname === '/ranking') {
+    document.body.classList.add('has-dashboard');
+  } else {
+    document.body.classList.remove('has-dashboard');
+  }
+
   if (pathname === "/login")    login(url);
   if (pathname === "/register") register(url);
 
@@ -56,7 +81,7 @@ export async function navigate(pathname) {
   }                                               //ablandoa
 
   // Render de navegación después de cargar el template
-  setupNavigation();
+  setupNavigation(pathname);
 }
 
 document.body.addEventListener("click", (e) => {
@@ -78,8 +103,6 @@ document.body.addEventListener("click", (e) => {
 
 // Inicialización
 window.addEventListener("DOMContentLoaded", () => {
-  setupNavigation();
-
   const path = window.location.pathname;
   if (routes[path]) {
     navigate(path);
@@ -88,3 +111,5 @@ window.addEventListener("DOMContentLoaded", () => {
     else navigate("/dashboard");
   }
 });
+
+window.addEventListener('resize', () => setupNavigation(window.location.pathname));
