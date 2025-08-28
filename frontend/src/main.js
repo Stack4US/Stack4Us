@@ -9,6 +9,7 @@ const routes = {
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
   "/about": "./src/templates/about.html",
+  "/edit-post": "./src/templates/edit-post.html",
 
   // Login y Registro
   "/register": "./src/templates/auth/register.html",
@@ -79,6 +80,10 @@ export async function navigate(pathname) {
   if (pathname === "/dashboard") {                 //ablandoa
     await renderDashboardAfterTemplateLoaded();    //ablandoa
   }                                               //ablandoa
+  if (pathname === "/edit-post") {
+    const mod = await import('./views/editPost.js');
+    await mod.renderEditPostAfterTemplateLoaded();
+  }
 
   // Render de navegación después de cargar el template
   setupNavigation(pathname);
