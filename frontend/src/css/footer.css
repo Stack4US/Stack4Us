@@ -5,31 +5,31 @@
 }
 
 footer {
+    /* Layout / box */
     padding: 20px;
     text-align: center;
+    /* Typography */
     font-family: "Poppins", sans-serif;
-    font-size: 20px !important;
+    font-size: 20px; /* tamaño base en desktop ajustado luego via media queries */
 }
 
 footer p {
+    /* Spacing */
     margin: 5px 0;
-    font-size: 14px;
-    color: #5E67CD;
-    font-size: 13px !important;
+    /* Typography */
+    font-size: 13px;
     font-weight: bold;
+    /* Visual */
+    color: #5E67CD;
 }
 
 footer a {
-    color: #5E67CD;
     text-decoration: none;
+    color: #5E67CD;
 }
 
-footer a:hover {
-    text-decoration: underline;
-}
+footer a:hover { text-decoration: underline; }
 
-@media screen and (min-width: 600px) {
-    footer p {
-        font-size: 15px !important;
-    }
+@media (min-width:600px) {
+    footer p { font-size: 15px; }
 }

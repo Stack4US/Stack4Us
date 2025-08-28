@@ -65,20 +65,16 @@ function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
   const userRole = storedRole; // usar alias normalizado //ablandoa
   const me = Number(localStorage.getItem('user_id')); // id usuario logueado //ablandoa
   const isOwner = Number(p.user_id) === Number(me); // comparación robusta numérica //ablandoa
-  // Tabla de permisos front (NO segura): //ablandoa
-  // coder: solo su propio post (editar y eliminar) //ablandoa
-  // team_leader: puede eliminar cualquier post, editar solo propios //ablandoa
-  // admin: todo //ablandoa
+
+  // Tabla de permisos front (NO segura):
   const canEdit = (userRole === 'admin') || (userRole === 'coder' && isOwner) || (userRole === 'team_leader' && isOwner); //ablandoa
   const canDelete = (userRole === 'admin') || (userRole === 'team_leader') || (userRole === 'coder' && isOwner); //ablandoa
-  // Debug temporal para inspeccionar permisos en consola //ablandoa
-  try { console.debug('[postCard perms]', {post_id: p.post_id, p_user_id: p.user_id, p_user_id_type: typeof p.user_id, me, me_type: typeof me, userRole, isOwner, canEdit, canDelete}); } catch(_) {}
-  const hasImg = Boolean(p.image && String(p.image).trim()); //ablandoa
-  const thumb = hasImg
-    ? `<img src="${p.image}" alt="post image" style="width:96px;height:96px;object-fit:cover;border-radius:8px;background:#f3f3f3" onerror="this.style.display='none'">`
-    : `<div style="width:96px;height:96px;border-radius:8px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-size:12px;color:#888">sin imagen</div>`; //ablandoa
 
-  // >>>>>>>>>>>>> CAMBIO MÍNIMO: agrego data-answer y rating-slot <<<<<<<<<<<<< //ablandoa
+  const hasImg = Boolean(p.image && String(p.image).trim()); //ablandoa
+  const imageBox = hasImg
+    ? `<div class="post-image-box" data-full="${p.image}"><img src="${p.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
+    : `<div class="post-image-box is-empty">IMG</div>`; // caja amplia o placeholder
+
   const answers = answersByPost.get(p.post_id) || []; // respuestas agrupadas //ablandoa
   const answersHTML = answers.length
     ? `<div class="answers-wrap" style="margin-top:8px">${
@@ -86,34 +82,30 @@ function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
           <div class='answer-item' data-answer='${a.answer_id}' style='font-size:12px;margin:4px 0;padding:6px 8px;background:#f7f7f9;border:1px solid #eee;border-radius:6px'>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
               <div><b>#${a.user_id}</b>: ${a.description || ''}</div>
-              <div class="rating-slot" data-answer="${a.answer_id}"></div> <!-- ablandoa -->
+              <div class="rating-slot" data-answer="${a.answer_id}"></div>
             </div>
           </div>`
         ).join('')
       }</div>`
-    : ''; //ablandoa
+    : '';
 
-  return `<article class="card" style="padding:12px">
-    <div style="display:flex;gap:12px">
-      ${thumb}
-      <div style="flex:1 1 auto">
-        <h4 style="margin:0">${p.title ?? ''}</h4>
-        <div style="font-size:12px;color:#666;margin:4px 0">
-          <span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor #${p.user_id ?? '-'}</span>
-        </div>
-        <p style="margin:6px 0 0">${p.description ?? ''}</p>
-        <div class="post-actions" style="display:flex;gap:6px;margin-top:8px">
-          ${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}
-          ${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}
-        </div>
-        ${answersHTML}
-        <form class='answer-form' data-post='${p.post_id}' style='margin-top:10px;display:flex;gap:6px'>
-          <input name='description' placeholder='Add answer...' style='flex:1;padding:4px 6px;font-size:12px'>
-          <button type='submit' style='font-size:12px;padding:4px 8px'>Enviar</button>
-        </form>
-      </div>
+  return `<article class="card post-card">
+    <h4>${p.title ?? ''}</h4>
+    <div class="post-meta">
+      <span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor #${p.user_id ?? '-'}</span>
     </div>
-  </article>`; //ablandoa
+    <p class="post-desc">${p.description ?? ''}</p>
+    ${imageBox}
+    <div class="post-actions">
+      ${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}
+      ${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}
+    </div>
+    ${answersHTML}
+    <form class='answer-form' data-post='${p.post_id}'>
+      <input name='description' placeholder='Add answer...'>
+      <button type='submit'>Enviar</button>
+    </form>
+  </article>`;
 }
 
 function answerItem(a) {
@@ -148,7 +140,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
 
   async function loadPosts() { // carga posts y renderiza //ablandoa
     const posts = await getJSON(`${API}/all-posts`);
-    // Aplicar overrides locales (ediciones simuladas) //ablandoa
+    // Aplicar overrides locales (ediciones simuladas)
     let overrides = {};
     try { overrides = JSON.parse(localStorage.getItem('post_overrides')||'{}'); } catch { overrides = {}; }
     const merged = posts.map(p => overrides[p.post_id] ? { ...p, ...overrides[p.post_id] } : p);
@@ -158,8 +150,10 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       postsEl.innerHTML = merged.length
         ? merged.slice().reverse().map(p=>postCard(p, answersByPost)).join('')
         : '<div class="card" style="padding:10px">No posts.</div>';
-      // Inyectar estrellas y promedios una vez pintados los posts //ablandoa
-      injectRatingsUI(postsEl, answersCache); //ablandoa
+
+      // Inyectar estrellas y promedios + enlazar lightbox
+      injectRatingsUI(postsEl, answersCache);
+      attachImageLightboxHandlers();
     }
   }
 
@@ -209,18 +203,17 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
   if (postsEl) { // listeners acciones sobre tarjetas //ablandoa
     postsEl.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');
-      const star = e.target.closest('.star'); // <- NUEVO: click en estrella //ablandoa
+      const star = e.target.closest('.star'); // click en estrella
 
-      // ---- EXISTENTE: botones editar/eliminar ----
+      // ---- botones editar/eliminar ----
       if (btn) {
         const id = btn.dataset.id;
-        if (btn.classList.contains('btn-delete')) { // eliminar post //ablandoa
-          if (!confirm('Eliminar post?')) return; //ablandoa
-          const token = localStorage.getItem('token'); //ablandoa
+        if (btn.classList.contains('btn-delete')) { // eliminar post
+          if (!confirm('Eliminar post?')) return;
+          const token = localStorage.getItem('token');
           if (!token) { alert('Sesión expirada. Reloguea.'); return; }
           const r = await fetch(`${API}/post/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
           if (r.ok) {
-            // quitar override local si existe //ablandoa
             try {
               const o = JSON.parse(localStorage.getItem('post_overrides')||'{}');
               delete o[id];
@@ -231,25 +224,25 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
             try { const err=await r.json(); console.error(err); alert(err.error||'Error eliminando'); } catch(_) {}
           }
         }
-        if (btn.classList.contains('btn-edit')) { // ir a pantalla de edición //ablandoa
+        if (btn.classList.contains('btn-edit')) { // ir a edición
           const article = btn.closest('article');
           const postId = id;
           const title = article.querySelector('h4')?.textContent || '';
           const desc = article.querySelector('p')?.textContent || '';
-          const meta = article.querySelector('div[style*="font-size:12px"]')?.textContent || '';
-          let typeMatch = meta.match(/Tipo:\s*([^·]+)/i); //ablandoa
-          let statusMatch = meta.match(/Estado:\s*([^·]+)/i); //ablandoa
+          const meta = article.querySelector('.post-meta')?.textContent || '';
+          let typeMatch = meta.match(/Tipo:\s*([^·]+)/i);
+          let statusMatch = meta.match(/Estado:\s*([^·]+)/i);
           const type = typeMatch ? typeMatch[1].trim().replace(/\.$/, '') : '';
           const status = statusMatch ? statusMatch[1].trim().replace(/\.$/, '') : '';
-          const image = article.querySelector('img')?.getAttribute('src') || '';
+          const image = article.querySelector('.post-image-box img')?.getAttribute('src') || '';
           const postData = { post_id: postId, title, description: desc, type, status, image };
           sessionStorage.setItem('edit_post', JSON.stringify(postData));
           import('../main').then(m=> m.navigate('/edit-post'));
         }
-        return; // no sigas si fue botón //ablandoa
+        return;
       }
 
-      // ---- NUEVO: calificar con estrella ---- //ablandoa
+      // ---- calificar con estrella ----
       if (star) {
         const answerId = Number(star.dataset.answer);
         const value = Number(star.dataset.value);
@@ -257,7 +250,6 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         const me = Number(localStorage.getItem('user_id') || 0);
         if (!token) { alert('Sesión expirada. Reloguea.'); return; }
 
-        // Seguridad UI: no calificar si es propia o si ya califiqué //ablandoa
         const aObj = answersCache.find(x => Number(x.answer_id) === answerId);
         if (!aObj) return;
         if (Number(aObj.user_id) === me) { alert('No puedes calificar tu propia respuesta'); return; }
@@ -275,9 +267,8 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
             alert(err?.error || 'No se pudo registrar la calificación');
             return;
           }
-          // Refrescar promedios + UI //ablandoa
-          await loadRatingsFromAPI(); //ablandoa
-          await loadPosts();          //ablandoa
+          await loadRatingsFromAPI();
+          await loadPosts();
         } catch (err) {
           console.error(err);
           alert('Error de red al calificar');
@@ -300,11 +291,11 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       fd.append('post_id', postId);
       try {
         const token = localStorage.getItem('token');
-        const r = await fetch(`${API}/answer`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd }); // endpoint singular segun backend //ablandoa
+        const r = await fetch(`${API}/answer`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd });
         if(r.ok){
           input.value='';
           await loadAnswers();
-          await loadRatingsFromAPI(); //ablandoa
+          await loadRatingsFromAPI();
           await loadPosts();
         } else {
           console.error(await r.json());
@@ -314,6 +305,56 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
   }
 
   await loadAnswers();
-  await loadRatingsFromAPI(); // <- NUEVO: cargar promedios/mis votos antes de pintar //ablandoa
+  await loadRatingsFromAPI();
   await loadPosts();
+  setupLightboxRoot();
+}
+
+// ---- Lightbox para imágenes de posts ---- //ablandoa
+function setupLightboxRoot(){
+  if(document.getElementById('img-lightbox-root')) return;
+  const div = document.createElement('div');
+  div.id = 'img-lightbox-root';
+  div.innerHTML = `
+    <div class="img-lightbox-backdrop" data-close="lb">
+      <figure class="img-lightbox-figure">
+        <img alt="Imagen del post" class="img-lightbox-img" />
+        <figcaption class="img-lightbox-caption"></figcaption>
+        <button type="button" class="img-lightbox-close" data-close="lb" aria-label="Cerrar">×</button>
+      </figure>
+    </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click', e=>{ if(e.target.dataset.close==='lb'){ closeLightbox(); }});
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+}
+
+function openLightbox(src, caption=''){
+  const root = document.getElementById('img-lightbox-root');
+  if(!root) return;
+  root.querySelector('.img-lightbox-img').src = src;
+  const capEl = root.querySelector('.img-lightbox-caption');
+  if(caption){ capEl.textContent = caption; capEl.style.display='block'; } else { capEl.textContent=''; capEl.style.display='none'; }
+  root.classList.add('is-open');
+  document.body.classList.add('lightbox-open');
+}
+function closeLightbox(){
+  const root = document.getElementById('img-lightbox-root');
+  if(!root) return;
+  root.classList.remove('is-open');
+  document.body.classList.remove('lightbox-open');
+}
+function attachImageLightboxHandlers(){
+  const boxes = document.querySelectorAll('.post-image-box[data-full]');
+  boxes.forEach(box=>{
+    if(box.dataset.lbBound) return; // evitar duplicar //ablandoa
+    box.dataset.lbBound = '1';
+    box.style.cursor = box.classList.contains('is-empty') ? 'default' : 'zoom-in';
+    if(!box.classList.contains('is-empty')){
+      box.addEventListener('click', ()=>{
+        const src = box.dataset.full;
+        const caption = box.closest('.post-card')?.querySelector('h4')?.textContent || '';
+        openLightbox(src, caption);
+      });
+    }
+  });
 }

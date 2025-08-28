@@ -2,7 +2,7 @@
 import isAuth from "./handleAuth/isAuth";
 import register from "./handleAuth/register";
 import login from "./handleAuth/login";
-import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; //ablandoa
+import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; // ablandoa
 
 // Rutas
 const routes = {
@@ -11,6 +11,7 @@ const routes = {
   "/ranking": "./src/templates/ranking.html",
   "/about": "./src/templates/about.html",
   "/edit-post": "./src/templates/edit-post.html",
+  "/profile": "./src/templates/profile.html",
 
   // Login y Registro
   "/register": "./src/templates/auth/register.html",
@@ -83,21 +84,34 @@ export async function navigate(pathname) {
   if (pathname === "/login") login(url);
   if (pathname === "/register") register(url);
 
-  // Mantengo EXACTO el hook del dashboard para no romper el post
+  // DASHBOARD: carga CSS (solo 1 vez) + render
   if (pathname === "/dashboard") {
-    await renderDashboardAfterTemplateLoaded(); //ablandoa
+    if (!document.querySelector('link[data-dashboard-css]')) {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = '/src/css/dashboard.css';
+      l.setAttribute('data-dashboard-css', '1');
+      document.head.appendChild(l);
+    }
+    await renderDashboardAfterTemplateLoaded();
   }
 
-  // >>>>>>>>>>>>>>>> RANKING: cargar vista <<<<<<<<<<<<<<< //ablandoa
-  if (pathname === "/ranking") { //ablandoa
-    const mod = await import("./views/ranking.js"); //ablandoa
-    await mod.renderRankingAfterTemplateLoaded();   //ablandoa
-  } //ablandoa
-  // ------------------------------------------------------
+  // RANKING
+  if (pathname === "/ranking") {
+    const mod = await import("./views/ranking.js");
+    await mod.renderRankingAfterTemplateLoaded();
+  }
 
+  // EDIT POST
   if (pathname === "/edit-post") {
     const mod = await import("./views/editPost.js");
     await mod.renderEditPostAfterTemplateLoaded();
+  }
+
+  // PROFILE
+  if (pathname === "/profile") {
+    const mod = await import("./views/profile.js");
+    await mod.renderProfileAfterTemplateLoaded();
   }
 
   // Render de navegación después de cargar el template
@@ -118,6 +132,13 @@ document.body.addEventListener("click", (e) => {
     }
 
     navigate(path);
+  }
+
+  // Click en tarjeta usuario sidebar -> perfil
+  const uc = e.target.closest('#sidebarUserCard');
+  if (uc) {
+    e.preventDefault();
+    navigate('/profile');
   }
 });
 
