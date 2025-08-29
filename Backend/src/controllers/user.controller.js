@@ -1,32 +1,29 @@
-import { uploadImage } from '../services/cloudinary.service.js';
 import * as userService from '../services/user.service.js';
-
 
 export async function registerUser(req, res, next) {
     try {
-        const { user_name, email, password, rol_id } = req.body;
+        const { user_name, email, password } = req.body;
+        const rol_id = 1;
 
-    if (!user_name || !email || !password) {
-        return res.status(400).json({ message: 'User_name, email and password are required' });
-    }
-    
-    const newUser = await userService.createUser({ user_name, email, password });
-
-    res.status(201).json({
-        message: 'User registered successfully',
+        if (!user_name || !email || !password) {
+            return res.status(400).json({ message: 'User_name, email and password are required' });
+        }
         
-        user: {
-            id: newUser.user_id,
-            username: newUser.user_name,
-            email: newUser.email,
-            role: newUser.rol_id,
-            }
+        const newUser = await userService.createUser({ user_name, email, password, rol_id });
 
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: {
+                id: newUser.user_id,
+                username: newUser.user_name,
+                email: newUser.email,
+                role: newUser.rol_id,
+            }
         });
 
     } catch (err) {
         next(err); 
-        }
+    }
 }
 
 export async function loginUser(req, res, next) {
@@ -85,7 +82,7 @@ export async function deleteUser(req, res, next) {
         } else {
             userIdToDelete = Number(req.user.user_id);
         }
-
+        
         const deleted = await userService.deleteUser(userIdToDelete);
 
         if (!deleted) {

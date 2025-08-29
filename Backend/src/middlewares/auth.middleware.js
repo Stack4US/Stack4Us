@@ -9,7 +9,7 @@ function generateToken(user) {
             {
                 user_id: user.user_id,
                 email: user.email,
-                rol: user.rol_id,
+                rol_id: user.rol_id,
             },
             JWT_SECRET,
             { expiresIn: '5h' }
@@ -37,4 +37,4 @@ function authenticateToken(req, res, next) {
     }
 }
 
-export { generateToken, authenticateToken, isAdmin };
+export { generateToken, authenticateToken };

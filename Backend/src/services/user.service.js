@@ -5,7 +5,7 @@ import { generateToken }   from '../middlewares/auth.middleware.js';
 
 
 export async function createUser({ user_name, email, password, rol_id }) {
-    const roleToInsert = rol_id === 2 ? 2 : 1;
+    const roleToInsert = 1;
 
     try {
         if (!password) {
@@ -70,31 +70,31 @@ export async function getUserById(userId) {
 }
 
 export async function updateUser(user_id, { description }, file) {
-  try {
-    let profile_image = null;
+    try {
+        let profile_image = null;
 
-    if (file) {
-      const uploadResult = await uploadImage(file.buffer, "profile"); 
-      profile_image = uploadResult.secure_url;
+        if (file) {
+            const uploadResult = await uploadImage(file.buffer, "profile"); 
+            profile_image = uploadResult.secure_url;
+        }
+
+        const result = await pool.query(
+            `UPDATE users 
+            SET profile_image = COALESCE($1, profile_image),
+                    description = COALESCE($2, description)
+            WHERE user_id = $3
+            RETURNING user_id, user_name, email, rol_id, description, profile_image`,
+            [profile_image, description, user_id]
+        );
+
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        throw error;
     }
-
-    const result = await pool.query(
-      `UPDATE users 
-      SET description = COALESCE($1, description),
-          profile_image = COALESCE($2, profile_image)
-      WHERE user_id = $3
-      RETURNING user_id, user_name, email, rol_id, description, profile_image`,
-      [description, profile_image, user_id]
-    );
-
-    return result.rows[0];
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw error;
-  }
 }
 
-export async function deleteUser(userId) { //se autoelimina user asi sea admiin wtf
+export async function deleteUser(userId) {
   const id = Number(userId);
   if (Number.isNaN(id)) return null;
 
@@ -112,5 +112,3 @@ export async function getAllUsers() {
     );
     return result.rows;
 } 
-
-
