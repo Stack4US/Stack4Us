@@ -85,6 +85,34 @@ button:disabled { background:#9aa0c9; cursor:not-allowed; }
 .post-actions button { padding:4px 10px; font-size:11px; }
 .answers-wrap { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
 .answer-item { font-size:12px; }
+.answer-item { position:relative; padding:8px 10px; background:#f7f7f9; border:1px solid #ececec; border-radius:6px; }
+.answer-item .answer-head { font-size:12px; margin:0 0 4px; }
+.answer-item .answer-body { font-size:12px; line-height:1.35; }
+.conversation-thread { margin:6px 0 6px 10px; display:flex; flex-direction:column; gap:4px; padding-left:10px; border-left:2px solid #d4d6dd; }
+.conversation-item { background:#ffffff; border:1px solid #e3e5ea; padding:6px 8px; border-radius:5px; font-size:11px; line-height:1.3; }
+.conversation-item.is-directed { border-color:#cfd4ef; background:#f4f6ff; }
+.conversation-item .mention { color:#2d36b8; font-weight:600; }
+.ig-comment { padding:6px 4px 2px 4px; background:transparent; border:none; }
+.ig-comment-line { font-size:12px; line-height:1.35; }
+.ig-user { font-weight:600; margin-right:4px; }
+.ig-text { white-space:pre-wrap; }
+.ig-actions-row { display:flex; gap:12px; margin:2px 0 4px 0; }
+.ig-action { background:transparent; border:none; color:#777; font-size:11px; padding:2px 0; cursor:pointer; line-height:1; }
+.ig-action:hover { color:#111; }
+.ig-replies { margin-left:14px; display:flex; flex-direction:column; gap:4px; }
+.ig-subcomment { padding:4px 0 0 0; background:transparent; border:none; }
+.ig-subcomment .ig-actions-row { gap:8px; }
+.ig-subcomment .reply-trigger { font-size:10px; }
+.conversation-form { display:flex; align-items:center; gap:6px; margin:6px 0 4px 10px; padding:6px 8px; background:#eef0f7; border:1px dashed #c7ccda; border-radius:6px; }
+.conversation-form .reply-context { font-size:11px; color:#444; margin-right:6px; }
+.reply-trigger { background:transparent; color:#2d36b8; border:none; font-size:11px; padding:2px 6px; cursor:pointer; border-radius:4px; }
+.reply-trigger.small { font-size:10px; padding:2px 4px; }
+.reply-trigger:hover { background:#e9ecfb; }
+.conversation-form input { flex:1; padding:6px 8px; font-size:11px; border:1px solid #cfd3dd; border-radius:4px; background:#fff; }
+.conversation-form button { padding:6px 10px; font-size:12px; background:var(--c-primary); color:#fff; border:none; border-radius:4px; cursor:pointer; }
+.conversation-form button:hover { background:var(--c-primary-hover); }
+.conversation-form:focus-within { box-shadow:0 0 0 2px rgba(93,103,205,.25); }
+.answer-item:hover { border-color:#d0d2d8; }
 .answer-form { display:flex; gap:6px; margin-top:6px; }
 .answer-form input { flex:1; padding:6px 8px; font-size:12px; border:1px solid var(--c-border); border-radius:var(--radius-sm); background:#f3f3f5; }
 .answer-form button { padding:6px 10px; font-size:12px; }

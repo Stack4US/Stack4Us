@@ -2,8 +2,12 @@
 // Este archivo administra la carga de posts y sus respuestas, además
 // de aplicar reglas de permisos en el FRONT (no reemplaza validación backend). //ablandoa
 const API = 'http://localhost:3000'; // keep in sync with backend base URL //ablandoa
+// caches para nombres y conversaciones
+let usersMap = new Map(); // user_id -> user_name
+let conversationsCache = []; // replies a answers
+function userName(id){ return usersMap.get(String(id)) || `User #${id}`; }
 
-function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
+function postCard(p, answersByPost, convByAnswer) { // dibuja una tarjeta de post con replies anidados //ablandoa
   let storedRole = localStorage.getItem('role'); // puede venir como id numerico (1,2,3) o alias //ablandoa
   // Mapeo numerico -> alias //ablandoa
   if (storedRole === '1') storedRole = 'coder';
@@ -25,10 +29,36 @@ function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
       ? `<div class="post-image-box" data-full="${p.image}"><img src="${p.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
     : `<div class="post-image-box is-empty">IMG</div>`; // caja amplia para imagen o placeholder //ablandoa
   const answers = answersByPost.get(p.post_id) || []; // respuestas agrupadas //ablandoa
-  const answersHTML = answers.length
-    ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>`<div class='answer-item' style='font-size:12px;margin:4px 0;padding:6px 8px;background:#f7f7f9;border:1px solid #eee;border-radius:6px'><b>#${a.user_id}</b>: ${a.description || ''}</div>`).join('')}</div>`
-    : ''; //ablandoa
-  return `<article class="card post-card"><h4>${p.title ?? ''}</h4><div class="post-meta"><span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor #${p.user_id ?? '-'}</span></div><p class="post-desc">${p.description ?? ''}</p>${imageBox}<div class="post-actions">${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}</div>${answersHTML}<form class='answer-form' data-post='${p.post_id}'><input name='description' placeholder='Add answer...'><button type='submit'>Enviar</button></form></article>`; //ablandoa
+  const answersHTML = answers.length ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>{
+    const convs = convByAnswer.get(a.answer_id)||[];
+    const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{
+      const raw = c.description||'';
+      const directedMatch = raw.match(/^@(\S+)/); /* corregido: detectar solo si inicia con @ */
+      const bodyHTML = raw.replace(/^@(\S+)/, (m,u)=>`<span class=\"mention\">@${u}</span>`);
+      const isDirected = directedMatch? ' is-directed' : '';
+      const meId = Number(localStorage.getItem('user_id'));
+      const canDel = meId === Number(c.user_id);
+      const convId = c.conversation_id || c.id || '';
+      return `<div class='conversation-item ig-subcomment${isDirected}' data-conv='${convId}' data-user='${c.user_id}' data-answer='${a.answer_id}'>
+        <div class='ig-comment-line'><b class='ig-user'>${userName(c.user_id)}</b> <span class='ig-text'>${bodyHTML}</span></div>
+        <div class='ig-actions-row'>
+          <button class='reply-trigger ig-action small' data-user='${c.user_id}' data-answer='${a.answer_id}' data-source='conversation'>Responder</button>
+          ${canDel && convId?`<button class='ig-action comment-delete small' data-type='conversation' data-conv='${convId}'>Eliminar</button>`:''}
+        </div>
+      </div>`;
+    }).join('')}</div>` : '';
+    const meId = Number(localStorage.getItem('user_id'));
+    const canDelAnswer = meId === Number(a.user_id);
+    return `<div class='answer-item ig-comment' data-answer='${a.answer_id}'>
+      <div class='ig-comment-line'><b class='ig-user'>${userName(a.user_id)}</b> <span class='ig-text'>${a.description||''}</span></div>
+      <div class='ig-actions-row'>
+        <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button>
+        ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Eliminar</button>`:''}
+      </div>
+      <div class='ig-replies'>${convHTML}</div>
+    </div>`;
+  }).join('')}</div>` : '';
+  return `<article class="card post-card"><h4>${p.title ?? ''}</h4><div class="post-meta"><span>Tipo: ${p.type ?? '-'}</span> · <span>Estado: ${p.status ?? 'unsolved'}</span> · <span>Autor ${userName(p.user_id ?? '-')}</span></div><p class="post-desc">${p.description ?? ''}</p>${imageBox}<div class="post-actions">${canEdit?`<button class='btn-edit' data-id='${p.post_id}'>Editar</button>`:''}${canDelete?`<button class='btn-delete' data-id='${p.post_id}'>Eliminar</button>`:''}</div>${answersHTML}<form class='answer-form' data-post='${p.post_id}'><input name='description' placeholder='Add answer...'><button type='submit'>Enviar</button></form></article>`; //ablandoa
 }
 
 function answerItem(a) {
@@ -60,23 +90,50 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
     list.forEach(a=>{ const arr=map.get(a.post_id)||[]; arr.push(a); map.set(a.post_id,arr); });
     return map;
   }
+  // --- inserted: grouping conversations and load helpers ---
+  function groupConversations(list){
+    const map = new Map();
+    list.forEach(c=>{ const arr = map.get(c.answer_id)||[]; arr.push(c); map.set(c.answer_id, arr); });
+    return map;
+  }
+  async function loadUsers(){
+    try { const users = await getJSON(`${API}/Users`); usersMap = new Map(users.map(u=>[String(u.user_id), u.user_name])); }
+    catch(err){ console.error('Error loading users', err); }
+  }
+  async function loadConversations(){
+    try { conversationsCache = await getJSON(`${API}/conversations`); }
+    catch(err){ console.error('Error loading conversations', err); conversationsCache = []; }
+  }
   async function loadPosts() { // carga posts y renderiza //ablandoa
     const posts = await getJSON(`${API}/all-posts`);
-    // Aplicar overrides locales (ediciones simuladas) //ablandoa
     let overrides = {};
     try { overrides = JSON.parse(localStorage.getItem('post_overrides')||'{}'); } catch { overrides = {}; }
     const merged = posts.map(p => overrides[p.post_id] ? { ...p, ...overrides[p.post_id] } : p);
     if (qEl) qEl.textContent = posts.length;
     const answersByPost = groupAnswers(answersCache);
+    const convByAnswer = groupConversations(conversationsCache || []);
     if (postsEl) {
-      postsEl.innerHTML = merged.length ? merged.slice().reverse().map(p=>postCard(p, answersByPost)).join('') : '<div class="card" style="padding:10px">No posts.</div>';
-  attachImageLightboxHandlers();
+      postsEl.innerHTML = merged.length ? merged.slice().reverse().map(p=>postCard(p, answersByPost, convByAnswer)).join('') : '<div class="card" style="padding:10px">No posts.</div>';
+      attachImageLightboxHandlers();
     }
   }
   async function loadAnswers() { // carga todas las respuestas //ablandoa
     answersCache = await getJSON(`${API}/answers`);
     if (aEl) aEl.textContent = answersCache.length;
     if (pEl) pEl.textContent = String(answersCache.length * 10);
+  }
+  async function ensureCurrentUserExists(){
+    const uid = localStorage.getItem('user_id');
+    if(!uid) return false;
+    // si ya está en usersMap evitar fetch extra
+    if(usersMap && usersMap.has(String(uid))) return true;
+    try { const users = await getJSON(`${API}/Users`); usersMap = new Map(users.map(u=>[String(u.user_id), u.user_name])); }
+    catch(err){ console.warn('No se pudo refrescar usuarios', err); }
+    const exists = usersMap.has(String(uid));
+    if(!exists){
+      console.warn('[ensureCurrentUserExists] user_id local no está en BD', uid);
+    }
+    return exists;
   }
 
   if (form) { // submit crear post //ablandoa
@@ -162,19 +219,108 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       const input = form.querySelector('input[name="description"]');
       const txt = (input?.value||'').trim();
       if(!txt) return;
+  const uid = localStorage.getItem('user_id');
+  if(!uid || isNaN(Number(uid))){ alert('Sesión inválida: user_id faltante. Reloguear.'); return; }
+  if(!(await ensureCurrentUserExists())){ alert('Tu usuario ya no existe en el servidor. Reloguea.'); localStorage.clear(); return; }
       const fd = new FormData();
       fd.append('description', txt);
-      fd.append('user_id', localStorage.getItem('user_id'));
+  fd.append('user_id', uid);
       fd.append('post_id', postId);
       try {
         const token = localStorage.getItem('token');
-        const r = await fetch(`${API}/answer`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd }); // endpoint singular segun backend //ablandoa
-        if(r.ok){ input.value=''; await loadAnswers(); await loadPosts(); }
+  const r = await fetch(`${API}/answer`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd });
+        if(r.ok){ input.value=''; await loadAnswers(); await loadConversations?.(); await loadPosts(); }
         else console.error(await r.json());
       } catch(err){ console.error(err); }
     });
+    // conversation reply form
+    postsEl.addEventListener('submit', async (e)=>{
+      const cForm = e.target.closest('.conversation-form');
+      if(!cForm) return;
+      e.preventDefault();
+      const answerId = cForm.getAttribute('data-answer');
+      const input = cForm.querySelector('input[name="description"]');
+  const targetUserId = cForm.getAttribute('data-target');
+      const txt = (input?.value||'').trim();
+      if(!txt) return;
+  const uid = localStorage.getItem('user_id');
+  if(!uid || isNaN(Number(uid))){ alert('Sesión inválida: user_id faltante. Reloguear.'); return; }
+  if(!(await ensureCurrentUserExists())){ alert('Tu usuario ya no existe en el servidor. Reloguea.'); localStorage.clear(); return; }
+      // Prefijo @usuario si hay target seleccionado
+      let finalText = txt;
+      if(targetUserId){
+        const uname = userName(targetUserId).replace(/\s+/g,'');
+        if(!finalText.startsWith('@')) finalText = `@${uname} ${finalText}`; // simple mención
+      }
+      const fd = new FormData();
+      fd.append('description', finalText);
+  fd.append('user_id', uid);
+      fd.append('answer_id', answerId);
+      try {
+        const token = localStorage.getItem('token');
+        const r = await fetch(`${API}/conversation`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd });
+        if(r.ok){ input.value=''; await loadConversations?.(); await loadPosts(); }
+        else {
+          let errInfo = {}; try { errInfo = await r.json(); } catch {}
+          console.error('Error conversacion', r.status, errInfo);
+          alert(errInfo.error || 'Error enviando respuesta');
+        }
+      } catch(err){ console.error(err); }
+    });
+    // gestionar aparición del formulario al pulsar 'Responder'
+    postsEl.addEventListener('click', (e)=>{
+      const trigger = e.target.closest('.reply-trigger');
+      if(!trigger) return;
+      e.preventDefault();
+      const answerId = trigger.getAttribute('data-answer');
+      const userId = trigger.getAttribute('data-user');
+      const answerBox = trigger.closest('.answer-item');
+      if(!answerBox) return;
+      // eliminar formulario existente si hay
+      answerBox.querySelectorAll('form.conversation-form').forEach(f=>f.remove());
+      // crear formulario inline
+      const form = document.createElement('form');
+      form.className = 'conversation-form';
+      form.setAttribute('data-answer', answerId);
+      if(userId) form.setAttribute('data-target', userId);
+      form.innerHTML = `
+        <div class='reply-context'>Respondiendo a <b>${userName(userId)}</b></div>
+        <input name='description' placeholder='Escribe tu respuesta...' />
+        <button type='submit' title='Enviar respuesta'>↳</button>`;
+  // Seleccionar ancla robusta (IG style)
+  const anchor = trigger.closest('.ig-actions-row') || trigger.closest('.conversation-item') || trigger.parentElement || answerBox;
+  if(!anchor){ console.warn('[reply-trigger] anchor no encontrada'); return; }
+  anchor.insertAdjacentElement('afterend', form);
+      form.querySelector('input').focus();
+    });
+    // eliminar answer o conversation propia
+    postsEl.addEventListener('click', async (e)=>{
+      const delBtn = e.target.closest('.comment-delete');
+      if(!delBtn) return;
+      e.preventDefault();
+      if(!confirm('Eliminar?')) return;
+      const token = localStorage.getItem('token');
+      if(!token){ alert('Sesión expirada'); return; }
+      const type = delBtn.dataset.type;
+      try {
+        if(type==='answer'){
+          const id = delBtn.dataset.answer;
+          console.debug('[delete answer attempt]', id);
+          const r = await fetch(`${API}/owns-answers/${id}`, { method:'DELETE', headers:{ 'Authorization': `Bearer ${token}` }});
+          if(!r.ok){ console.error('Fail delete answer', await r.json().catch(()=>({}))); }
+        } else if(type==='conversation') {
+          const id = delBtn.dataset.conv;
+          console.debug('[delete conversation attempt]', id);
+          const r = await fetch(`${API}/owns-conversation/${id}`, { method:'DELETE', headers:{ 'Authorization': `Bearer ${token}` }});
+          if(!r.ok){ console.error('Fail delete conv', await r.json().catch(()=>({}))); }
+        }
+        await loadAnswers(); await loadConversations?.(); await loadPosts();
+      } catch(err){ console.error(err); }
+    });
   }
+  await loadUsers?.();
   await loadAnswers();
+  await loadConversations?.();
   await loadPosts();
   setupLightboxRoot();
 }
