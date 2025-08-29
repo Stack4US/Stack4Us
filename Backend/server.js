@@ -444,7 +444,6 @@ app.get('/answers', async (_req, res) => {
 app.post('/answer', upload.single("image"), async (req, res) => {
   const { description, user_id, post_id } = req.body;
   let image = null;
-
   if (!description || description.trim() === '') {
     return res.status(400).json({ error: 'Description is required' });
   }
@@ -454,33 +453,32 @@ app.post('/answer', upload.single("image"), async (req, res) => {
   if (!post_id || isNaN(post_id)) {
     return res.status(400).json({ error: 'Valid post_id is required' });
   }
-
   try {
-
-    const postExists = await pool.query('SELECT post_id FROM post WHERE post_id = $1', [post_id]);
-    if (postExists.rows.length === 0) {
+    const postResult = await pool.query('SELECT user_id FROM post WHERE post_id = $1', [post_id]);
+    if (postResult.rows.length === 0) {
       return res.status(400).json({ error: 'Post does not exist' });
     }
-  
+    const postOwnerId = postResult.rows[0].user_id;
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-  
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
         folder: "answers",
       });
       image = uploadResult.secure_url;
     }
-
     const result = await pool.query(
       'INSERT INTO answer (description, user_id, post_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), user_id, post_id, image]
     );
+        if (user_id != postOwnerId) { await pool.query(
+          "INSERT INTO notifications (user_id, message, date, status) VALUES ($1, $2, NOW(), 'unread')",
+          [postOwnerId, `Tienes una nueva respuesta en tu post`]
+        ); }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting answer:', err);
@@ -509,7 +507,6 @@ app.delete('/answer/:id', async (req, res) => {
 app.post('/conversation', upload.single("image"), async (req, res) => {
   const { description, user_id, answer_id } = req.body;
   let image = null;
-
   const uid = parseInt(user_id, 10);
   const aid = parseInt(answer_id, 10);
 
@@ -522,33 +519,36 @@ app.post('/conversation', upload.single("image"), async (req, res) => {
   if (!aid || isNaN(aid)) {
     return res.status(400).json({ error: 'Valid answer_id is required' });
   }
-
   try {
-
-    const answerExists = await pool.query('SELECT answer_id FROM answer WHERE answer_id = $1', [aid]);
-    if (answerExists.rows.length === 0) {
+    const answerResult = await pool.query('SELECT user_id, post_id FROM answer WHERE answer_id = $1', [aid]);
+    if (answerResult.rows.length === 0) {
       return res.status(400).json({ error: 'Answer does not exist' });
     }
-  
+    const answerOwnerId = answerResult.rows[0].user_id;
+    const postId = answerResult.rows[0].post_id;
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [uid]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-  
     if (req.file && req.file.buffer) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
         folder: "conversation",
       });
       image = uploadResult.secure_url;
     }
-
     const result = await pool.query(
       'INSERT INTO conversation (description, user_id, answer_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), uid, aid, image]
     );
+    // Solo enviar notificación si el que comenta no es el dueño de la respuesta
+    if (uid !== answerOwnerId) {
+      await pool.query(
+        "INSERT INTO notifications (user_id, message, date, status) VALUES ($1, $2, NOW(), 'unread')",
+        [answerOwnerId, `Tienes un nuevo comentario en tu respuesta`]
+      );
+    }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting conversation:', err);
@@ -596,7 +596,35 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
   }
 });
 
+// ======================== NOTIFICATIONS  ========================
 
+// ======================== GET ALL NOTIFICATIONS  ========================
+app.get("/get-all-notifications/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const notifications = await pool.query(
+      "SELECT * FROM notifications WHERE user_id = $1 ORDER BY date DESC",
+      [user_id]
+    );
+    res.json(notifications.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching notifications" });
+  }
+});
+
+// ======================== NOTIFICATION STATUS ========================
+app.patch("/notifications/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query(
+      "UPDATE notifications SET status = 'read' WHERE notification_id = $1",
+      [id]
+    );
+    res.json({ message: "Notificación marcada como leída" });
+  } catch (err) {
+    res.status(500).json({ error: "Error actualizando notificación" });
+  }
+});
 
 // ========================= LISTEN ============================
 app.listen(PORT, () => {
