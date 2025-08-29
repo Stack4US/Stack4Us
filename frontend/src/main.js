@@ -22,16 +22,6 @@ const url = 'http://localhost:3000';
 function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
-  // Ensure purple blob exists (once)
-  const existingBlob = document.querySelector('.nav-blob');
-  if(!existingBlob){
-    const parentNav = nav.closest('.app-nav');
-    if(parentNav){
-      const blob = document.createElement('div');
-      blob.className='nav-blob';
-      parentNav.appendChild(blob);
-    }
-  }
   const appPages = ['/dashboard','/ranking','/about'];
   const onAppPages = appPages.includes(currentPath);
   const isMobile = window.innerWidth < 1000;
@@ -83,13 +73,6 @@ export async function navigate(pathname) {
     document.body.classList.add('has-dashboard');
   } else {
     document.body.classList.remove('has-dashboard');
-  }
-
-  // Clase para pantallas auth (login/register) -> muestra blob y quita líneas
-  if (pathname === '/login' || pathname === '/register') {
-    document.body.classList.add('auth-nav');
-  } else {
-    document.body.classList.remove('auth-nav');
   }
 
   if (pathname === "/login")    login(url);
