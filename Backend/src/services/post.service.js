@@ -1,4 +1,7 @@
 import pool from '../config/data_base_conection.js';
+import cloudinary from '../config/cloudinary.js';
+import { uploadImage } from './cloudinary.service.js';
+
 //import { uploadImageIfNeeded } from '../utils/validators.js';
 
 export async function getAllPosts() {
@@ -12,26 +15,23 @@ export async function getAllPosts() {
 
 export async function createPost(body, file) {
   try {
-    let { type, title, description, user_id, status } = req.body;
-
+    let { type, title, description, user_id, status } = body;
     const cleanType  = String(type || '').trim().toLowerCase();
     const cleanTitle = String(title || '').trim();
     const cleanDesc  = String(description || '').trim();
     const uid = parseInt(user_id, 10);
 
-    if (!cleanType)  return res.status(400).json({ error: 'Need a type to work :c' });
-    if (!cleanTitle) return res.status(400).json({ error: 'Need a title to work :c' });
-    if (!cleanDesc)  return res.status(400).json({ error: 'Need a description to work :c' });
-    if (!Number.isInteger(uid)) {
-      return res.status(400).json({ error: 'Need a valid user_id to work :c' });
-    }
+    if (!cleanType)  throw new Error('Need a type to work :c');
+    if (!cleanTitle) throw new Error('Need a title to work :c');
+    if (!cleanDesc)  throw new Error('Need a description to work :c');
+    if (!Number.isInteger(uid)) throw new Error('Need a valid user_id to work :c');
 
     const userExists = await pool.query(
       'SELECT user_id FROM users WHERE user_id = $1',
       [uid]
     );
     if (userExists.rows.length === 0) {
-      return res.status(400).json({ error: 'User_id does not exist :c' });
+      throw new Error('User_id does not exist :c');
     }
 
     const validStatuses = ['unsolved', 'solved'];
@@ -39,11 +39,10 @@ export async function createPost(body, file) {
       ? String(status).toLowerCase()
       : 'unsolved';
 
-
     let imageUrl = null;
-    if (req.file) {
-      const b64 = req.file.buffer.toString("base64");
-      const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    if (file) {
+      const b64 = file.buffer.toString("base64");
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
       const uploadResult = await cloudinary.uploader.upload(dataURI, { folder: "posts" });
       imageUrl = uploadResult.secure_url;
     }
@@ -55,14 +54,10 @@ export async function createPost(body, file) {
       [cleanType, cleanTitle, cleanDesc, uid, imageUrl, cleanStatus]
     );
 
-    res.status(201).json(postIns.rows[0]);
+    return postIns.rows[0];
   } catch (err) {
     console.error('[INSERT-POST] Error:', err);
-    res.status(500).json({
-      error: 'Error inserting post',
-      detail: err.message,
-      code: err.code || null
-    });
+    throw err;
   }
 }
 
@@ -76,18 +71,28 @@ export async function removePost(postId, user) {
         'SELECT user_id FROM post WHERE post_id = $1',
         [pid]
     );
+
     if (postRes.rows.length === 0) {
         return { status: 404, error: 'Post not found' };
     }
 
-    if (user.rol !== 'admin' && user.user_id !== postRes.rows[0].user_id) {
+    const postOwnerId = parseInt(postRes.rows[0].user_id, 10);
+
+    const rolId = parseInt(user.rol_id, 10);
+    const userId = parseInt(user.user_id, 10);
+
+    if (!Number.isInteger(rolId) || !Number.isInteger(userId)) {
+        return { status: 400, error: 'Invalid user data' };
+    }
+
+    const isAdmin = rolId === 2;
+    const isOwner = userId === postOwnerId;
+
+    if (!isAdmin && !isOwner) {
         return { status: 403, error: 'Not authorized to delete this post' };
     }
 
-    await pool.query(
-        'DELETE FROM post WHERE post_id = $1',
-        [pid]
-    );
+    await pool.query('DELETE FROM post WHERE post_id = $1', [pid]);
 
     return { status: 200, message: 'Post deleted successfully' };
 }
@@ -107,7 +112,7 @@ export async function modifyPost(postId, body, file, user) {
         return { status: 404, error: 'Post not found' };
     }
 
-    if (user.rol !== 'admin' && user.user_id !== postRes.rows[0].user_id) {
+    if (user.rol_id !== 2 && user.user_id !== postRes.rows[0].user_id) {
         return { status: 403, error: 'Not authorized to update this post' };
     }
 
@@ -126,7 +131,7 @@ export async function modifyPost(postId, body, file, user) {
     if (file) {
       const b64 = file.buffer.toString("base64");
       const dataURI = `data:${file.mimetype};base64,${b64}`;
-      const uploadResult = await uploadImageIfNeeded(dataURI, "posts");
+      const uploadResult = await uploadImage(dataURI, "posts");
       imageUrl = uploadResult.secure_url;
     }
 

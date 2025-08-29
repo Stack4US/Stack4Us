@@ -12,14 +12,14 @@ export async function listAllPosts(req, res, next) {
 }
 }
 
+
 export async function insertPost(req, res, next) {
-    try {
+  try {
     const newPost = await postService.createPost(req.body, req.file);
     res.status(201).json(newPost);
-
-} catch (err) {
+  } catch (err) {
     next(err);
-}
+  }
 }
 
 export async function deletePost(req, res, next) {
@@ -27,56 +27,40 @@ export async function deletePost(req, res, next) {
         const { id } = req.params;
         const user = req.user;
 
-        if (user.rol !== 'admin') {
-            return res.status(403).json({ error: 'Only admins can delete any post' });
-        }
+        const result = await postService.removePost(id, user);
 
-        await postService.removePost(id);
-        res.status(200).json({ message: 'Post deleted successfully' });
-
-    } catch (err) {
-        next(err);
-    }
-}
-
-export async function deleteOwnPost(req, res, next) {
-    try {
-        const { post_id } = req.params;
-        const user = req.user; 
-
-        if (!user) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        const result = await postService.removePost(post_id, user);
         if (result.error) {
             return res.status(result.status).json({ error: result.error });
         }
+
         res.status(200).json({ message: result.message });
-        
+
     } catch (err) {
         next(err);
     }
 }
+
 
 export async function updateOwnPost(req, res, next) {
-    try {
-        const { post_id } = req.params;
-        const user = req.user; 
+  try {
+    const { post_id } = req.params;
+    const user = req.user;
 
-        if (!user) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        const result = await postService.modifyPost(post_id, user, req.body, req.file);
-        if (result.error) {
-            return res.status(result.status).json({ error: result.error });
-        }
-        res.status(200).json(result.post);
-    } catch (err) {
-        next(err);
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-} 
+
+    const result = await postService.modifyPost(post_id, req.body, req.file, user);
+
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    res.status(200).json(result.post);
+  } catch (err) {
+    next(err);
+  }
+}
+
 
 export async function getUserPosts(req, res, next) {
     try {
