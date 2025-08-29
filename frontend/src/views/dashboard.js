@@ -4,8 +4,10 @@
 const API = 'http://localhost:3000'; // keep in sync with backend base URL //ablandoa
 // caches para nombres y conversaciones
 let usersMap = new Map(); // user_id -> user_name
+let userAvatars = new Map(); // user_id -> profile_image
 let conversationsCache = []; // replies a answers
 function userName(id){ return usersMap.get(String(id)) || `User #${id}`; }
+function userAvatar(id){ return userAvatars.get(String(id)) || ''; }
 
 function postCard(p, answersByPost, convByAnswer) { // dibuja una tarjeta de post con replies anidados //ablandoa
   let storedRole = localStorage.getItem('role'); // puede venir como id numerico (1,2,3) o alias //ablandoa
@@ -33,24 +35,40 @@ function postCard(p, answersByPost, convByAnswer) { // dibuja una tarjeta de pos
     const convs = convByAnswer.get(a.answer_id)||[];
     const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{
       const raw = c.description||'';
-      const directedMatch = raw.match(/^@(\S+)/); /* corregido: detectar solo si inicia con @ */
-      const bodyHTML = raw.replace(/^@(\S+)/, (m,u)=>`<span class=\"mention\">@${u}</span>`);
-      const isDirected = directedMatch? ' is-directed' : '';
+      const directedMatch = raw.match(/^@(\S+)/);
+      const bodyHTML = raw.replace(/^@(\S+)/, (m,u)=>`<span class="mention">@${u}</span>`);
       const meId = Number(localStorage.getItem('user_id'));
-      const canDel = meId === Number(c.user_id);
-      const convId = c.conversation_id || c.id || '';
-      return `<div class='conversation-item ig-subcomment${isDirected}' data-conv='${convId}' data-user='${c.user_id}' data-answer='${a.answer_id}'>
-        <div class='ig-comment-line'><b class='ig-user'>${userName(c.user_id)}</b> <span class='ig-text'>${bodyHTML}</span></div>
+      const canDel = meId === Number(c.user_id); // backend solo dueño
+      const avatarUrl = userAvatar(c.user_id);
+      const avatarHTML = avatarUrl
+        ? `<img class="ig-avatar" src="${avatarUrl}" alt="avatar" onerror="this.remove()">`
+        : `<span class="ig-avatar ig-avatar-fallback">${(userName(c.user_id)[0]||'?').toUpperCase()}</span>`;
+      return `<div class='conversation-item${directedMatch?' is-directed':''}' data-conv='${c.conversation_id}'>
+        <div class='ig-comment-line'>
+          <span class='ig-user'>
+            <span class="ig-user-avatar-wrap">${avatarHTML}</span>${userName(c.user_id)}
+          </span>
+          <span class='ig-text'>${bodyHTML}</span>
+        </div>
         <div class='ig-actions-row'>
-          <button class='reply-trigger ig-action small' data-user='${c.user_id}' data-answer='${a.answer_id}' data-source='conversation'>Responder</button>
-          ${canDel && convId?`<button class='ig-action comment-delete small' data-type='conversation' data-conv='${convId}'>Eliminar</button>`:''}
+          <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${c.user_id}' data-source='conversation'>Responder</button>
+          ${canDel?`<button class='ig-action comment-delete' data-type='conversation' data-conv='${c.conversation_id}'>Eliminar</button>`:''}
         </div>
       </div>`;
     }).join('')}</div>` : '';
     const meId = Number(localStorage.getItem('user_id'));
-    const canDelAnswer = meId === Number(a.user_id);
+    const canDelAnswer = (userRole === 'admin') || meId === Number(a.user_id);
+    const avatarUrl = userAvatar(a.user_id);
+    const avatarHTML = avatarUrl
+      ? `<img class="ig-avatar" src="${avatarUrl}" alt="avatar" onerror="this.remove()">`
+      : `<span class="ig-avatar ig-avatar-fallback">${(userName(a.user_id)[0]||'?').toUpperCase()}</span>`;
     return `<div class='answer-item ig-comment' data-answer='${a.answer_id}'>
-      <div class='ig-comment-line'><b class='ig-user'>${userName(a.user_id)}</b> <span class='ig-text'>${a.description||''}</span></div>
+      <div class='ig-comment-line'>
+        <span class='ig-user'>
+          <span class="ig-user-avatar-wrap">${avatarHTML}</span>${userName(a.user_id)}
+        </span>
+        <span class='ig-text'>${a.description||''}</span>
+      </div>
       <div class='ig-actions-row'>
         <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button>
         ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Eliminar</button>`:''}
@@ -97,8 +115,14 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
     return map;
   }
   async function loadUsers(){
-    try { const users = await getJSON(`${API}/Users`); usersMap = new Map(users.map(u=>[String(u.user_id), u.user_name])); }
-    catch(err){ console.error('Error loading users', err); }
+    try {
+      const list = await getJSON(`${API}/Users`);
+      list.forEach(u=>{
+        usersMap.set(String(u.user_id), u.user_name);
+        if (u.profile_image) userAvatars.set(String(u.user_id), u.profile_image);
+      });
+    }
+    catch(err){ console.warn('users load fail', err); }
   }
   async function loadConversations(){
     try { conversationsCache = await getJSON(`${API}/conversations`); }
