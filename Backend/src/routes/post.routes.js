@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
-import { upload } from '../config/cloudinary.js';
+import { upload } from '../middlewares/upload.middleware.js';
 import {
   listAllPosts,
   insertPost,

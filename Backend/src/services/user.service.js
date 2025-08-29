@@ -1,6 +1,6 @@
 import pool from '../config/data_base_conection.js';
 import bcrypt from 'bcrypt';
-import { cloudinary} from '../config/cloudinary.js';
+import cloudinary from '../config/cloudinary.js';
 import { generateToken }   from '../middlewares/auth.middleware.js';
 
 
@@ -37,13 +37,13 @@ export async function authenticateUser(user_name, password) {
         );
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'User not found' });
+            return null
         }
 
         const user = result.rows[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ error: 'Incorrect password' });
+            return null;
         }
 
         const token = generateToken(user);
@@ -51,7 +51,7 @@ export async function authenticateUser(user_name, password) {
 
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error' });
+        throw error;
     }
 }
 

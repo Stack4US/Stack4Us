@@ -59,7 +59,7 @@ export async function updateUserProfile(req, res, next) {
 
         let imageUrl;
         if (req.file) {
-            const result = await uploadImage(req.file); 
+            const result = await uploadImage(req.file.path, 'profile'); 
             imageUrl = result.secure_url;
         }
 
