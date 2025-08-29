@@ -1,19 +1,14 @@
 /* Profile page styles (ordered: layout/box -> spacing -> typography -> visual -> misc) */
 .profile-page {
-  /* Layout */
   max-width: 860px;
-  /* Spacing */
   margin: 32px auto;
   padding: 0 16px;
 }
 
 .profile-card {
-  /* Layout */
   display: flex;
   gap: 32px;
-  /* Spacing */
   padding: 28px 32px;
-  /* Visual */
   background: #fff;
   border: 1px solid #e2e2e5;
   border-radius: 12px;
@@ -21,23 +16,19 @@
 }
 
 .profile-avatar-wrap {
-  /* Layout */
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  /* Box */
   width: 160px;
 }
 
 .profile-avatar {
-  /* Box */
   width: 140px;
   height: 140px;
-  /* Visual */
-  border:1px solid #ddd;
+  border: 1px solid #ddd;
   border-radius: 50%;
-  background:#f4f4f6;
+  background: #f4f4f6;
   object-fit: cover;
 }
 
@@ -74,8 +65,16 @@
 .back-btn {
   margin-top: 24px;
 }
-@media (max-width: 680px){
-  .profile-card { flex-direction: column; align-items: center; }
-  .profile-avatar-wrap { width: auto; }
-  .profile-avatar { width: 120px; height: 120px; }
+@media (max-width: 680px) {
+  .profile-card {
+    flex-direction: column;
+    align-items: center;
+  }
+  .profile-avatar-wrap {
+    width: auto;
+  }
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
+  }
 }

@@ -4,17 +4,13 @@
     box-sizing: border-box;
 }
 
-.form_login {
-    /* Layout */
+ .form_login {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* Spacing */
     margin: 20px;
     padding: 30px;
-    /* Typography */
     font-family: "Poppins", sans-serif;
-    /* Visual */
     border-radius: 10px;
     box-shadow: 1px 1px 5px 1px rgba(0,0,0,0.1);
 }
@@ -45,17 +41,17 @@
     padding: 16px;
     border: none;
     border-radius: 10px;
-    background:#E4E4E4;
+    background: #E4E4E4;
 }
 
 .form_login button {
-    margin-top:20px;
-    padding:16px;
-    border:none;
-    border-radius:10px;
-    background:#5E67CD;
-    color:#fff;
-    font-size:16px;
+    margin-top: 20px;
+    padding: 16px;
+    border: none;
+    border-radius: 10px;
+    background: #5E67CD;
+    color: #fff;
+    font-size: 16px;
 }
 
 .footer_form {
@@ -72,7 +68,7 @@
     text-decoration: none;
 }
 
-@media (min-width:600px){
+@media (min-width: 600px) {
     .form_login {
         max-width: 500px;
         margin: 40px auto;
