@@ -1,5 +1,6 @@
 import * as postService from '../services/post.service.js';
 
+
 export async function listAllPosts(req, res, next) {
 
     try {

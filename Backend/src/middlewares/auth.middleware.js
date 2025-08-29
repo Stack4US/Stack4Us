@@ -37,4 +37,4 @@ function authenticateToken(req, res, next) {
     }
 }
 
-export { generateToken, authenticateToken };
+export { generateToken, authenticateToken, isAdmin };
