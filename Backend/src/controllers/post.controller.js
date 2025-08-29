@@ -1,21 +1,24 @@
 import * as postService from '../services/post.service.js';
 
 export async function listAllPosts(req, res, next) {
-  try {
+
+    try {
     const posts = await postService.getAllPosts();
     res.status(200).json(posts);
-  } catch (err) {
+
+} catch (err) {
     next(err);
-  }
+}
 }
 
 export async function insertPost(req, res, next) {
-  try {
+    try {
     const newPost = await postService.createPost(req.body, req.file);
     res.status(201).json(newPost);
-  } catch (err) {
+
+} catch (err) {
     next(err);
-  }
+}
 }
 
 export async function deletePost(req, res, next) {
@@ -49,6 +52,7 @@ export async function deleteOwnPost(req, res, next) {
             return res.status(result.status).json({ error: result.error });
         }
         res.status(200).json({ message: result.message });
+        
     } catch (err) {
         next(err);
     }

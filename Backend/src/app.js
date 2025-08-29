@@ -1,11 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-
 import userRoutes from './routes/user.routes.js';
 import postRoutes from './routes/post.routes.js';
-import answerRoutes from './routes/answer.routes.js';
-import conversationRoutes from './routes/conversation.routes.js';
+//import answerRoutes from './routes/answer.routes.js';
+//import conversationRoutes from './routes/conversation.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
@@ -15,8 +14,8 @@ app.use(cors());
 // prefijos de API
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
-app.use('/api/answers', answerRoutes);
-app.use('/api/conversations', conversationRoutes);
+//app.use('/api/answers', answerRoutes);
+//app.use('/api/conversations', conversationRoutes);
 
 // ruta health
 app.get('/', (_req, res) => res.json({ ok: true }));

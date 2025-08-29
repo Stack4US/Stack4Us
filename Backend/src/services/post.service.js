@@ -1,5 +1,5 @@
 import pool from '../config/data_base_conection.js';
-import { uploadImageIfNeeded } from '../utils/validators.js';
+//import { uploadImageIfNeeded } from '../utils/validators.js';
 
 export async function getAllPosts() {
   const result = await pool.query(`

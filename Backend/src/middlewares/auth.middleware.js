@@ -3,7 +3,7 @@ import 'dotenv/config';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'DEV_LOCAL_ONLY_SECRET';
 
-export function generateToken(user) {
+function generateToken(user) {
     try {
         return jwt.sign(
             {
@@ -20,7 +20,7 @@ export function generateToken(user) {
     }
 }
 
-export function authenticateToken(req, res, next) {
+function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -36,3 +36,5 @@ export function authenticateToken(req, res, next) {
         return res.status(403).json({ error: 'Invalid token' });
     }
 }
+
+export { generateToken, authenticateToken };
