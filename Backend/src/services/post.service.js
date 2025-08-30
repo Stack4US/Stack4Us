@@ -2,8 +2,6 @@ import pool from '../config/data_base_conection.js';
 import cloudinary from '../config/cloudinary.js';
 import { uploadImage } from './cloudinary.service.js';
 
-//import { uploadImageIfNeeded } from '../utils/validators.js';
-
 export async function getAllPosts() {
   const result = await pool.query(`
     SELECT post_id, type, date, title, description, user_id, image, status

@@ -2,35 +2,27 @@ import pool from '../config/data_base_conection.js';
 import { uploadImage } from './cloudinary.service.js';
 
 export async function getAllAnswers() {
-    const result = await pool.query(`
-        SELECT answer_id, post_id, date, description, user_id, image
-        FROM answer
-        ORDER BY answer_id DESC
-    `);
-    return result.rows;
+    try {
+        const result = await pool.query(`
+            SELECT * FROM answer ORDER BY answer_id DESC
+        `);
+        return result.rows;
+    } catch (err) {
+        throw new Error('Error fetching answers: ' + err.message);
+    }
 }
 
-export async function createAnswer(body, file) {
+export async function createAnswer(body, file, user) {
     try {
-        const { post_id, user_id, description } = body;
+        const { post_id, description } = body;
         const cleanDesc = String(description || '').trim();
         const pid = parseInt(post_id, 10);
-        const uid = parseInt(user_id, 10);
+        const uid = parseInt(user.user_id, 10);
 
         if (!cleanDesc) throw new Error('Description is required.');
         if (!Number.isInteger(pid)) throw new Error('Invalid post_id.');
-        if (!Number.isInteger(uid)) throw new Error('Invalid user_id.');
+        if (!Number.isInteger(uid)) throw new Error('Invalid authenticated user_id.');
 
-        // Check if user exists
-        const userExists = await pool.query(
-            'SELECT user_id FROM users WHERE user_id = $1',
-            [uid]
-        );
-        if (userExists.rows.length === 0) {
-            throw new Error('User does not exist.');
-        }
-
-        // Check if post exists
         const postExists = await pool.query(
             'SELECT post_id FROM post WHERE post_id = $1',
             [pid]
@@ -59,12 +51,52 @@ export async function createAnswer(body, file) {
     }
 }
 
+export async function removeAnswer(answer_id, user) {
+    try {
+        const aid = parseInt(answer_id, 10);
+        const uid = parseInt(user.user_id, 10);
+        const roleId = parseInt(user.rol_id, 10);
+        const isAdmin = roleId === 2;
+
+        if (!Number.isInteger(aid)) {
+            return { error: 'Invalid answer ID.', status: 400 };
+        }
+        if (!Number.isInteger(uid)) {
+            return { error: 'Invalid authenticated user ID.', status: 400 };
+        }
+
+        const answerRes = await pool.query(
+            'SELECT user_id FROM answer WHERE answer_id = $1',
+            [aid]
+        );
+
+        if (answerRes.rows.length === 0) {
+            return { error: 'Answer not found.', status: 404 };
+        }
+
+        const answerOwnerId = parseInt(answerRes.rows[0].user_id, 10);
+
+        if (uid !== answerOwnerId && !isAdmin) {
+            return { error: 'Unauthorized to delete this answer.', status: 403 };
+        }
+
+        await pool.query(
+            'DELETE FROM answer WHERE answer_id = $1',
+            [aid]
+        );
+
+        return { status: 200, message: 'Answer deleted successfully.' };
+
+    } catch (err) {
+        return { error: 'Error deleting answer: ' + err.message, status: 500 };
+    }
+}
+
 export async function getAnswersByUserId(user_id) {
     const uid = parseInt(user_id, 10);
     if (!Number.isInteger(uid)) {
         return [];
     }
-
     const result = await pool.query(
         'SELECT answer_id, post_id, date, description, user_id, image FROM answer WHERE user_id = $1 ORDER BY answer_id DESC',
         [uid]

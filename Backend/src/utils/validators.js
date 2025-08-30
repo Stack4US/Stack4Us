@@ -3,8 +3,7 @@ import cloudinary from '../config/cloudinary.js';
 export async function uploadImageIfNeeded(file) {
     if (!file) return null;
     if (!file.buffer || !file.mimetype) throw new Error("Archivo inválido");
-
-  // Subir a Cloudinary usando upload_stream
+    
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
         { resource_type: 'image' },
