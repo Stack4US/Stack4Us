@@ -1,8 +1,8 @@
-import express from 'express';
+
 import cors from 'cors';
 import pool from './src/config/data_base_conection.js';
 import bcrypt from 'bcryptjs';
-import { cloudinary, upload } from './src/config/cloudinary_config.js';
+import { cloudinary, upload } from './src/config/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import 'dotenv/config';
 
@@ -147,11 +147,12 @@ app.post('/edit-user/:user_id', upload.single("image"), async (req, res) => {
     }
 
     const result = await pool.query(
-      `UPDATE users
-       SET description = $1, profile_image = $2
-       WHERE user_id = $3
-       RETURNING *`,
+      `UPDATE users 
+      SET description = $1, profile_image = $2 
+      WHERE user_id = $3 
+      RETURNING *`,
       [description, profile_image, user_id]
+
     );
 
     if (result.rows.length === 0) {
@@ -408,8 +409,7 @@ app.post('/insert-post', upload.single("image"), async (req, res) => {
 
     const postIns = await pool.query(
       `INSERT INTO post (type, date, title, description, user_id, image, status)
-       VALUES ($1, NOW(), $2, $3, $4, $5, $6)
-       RETURNING *`,
+      VALUES ($1, NOW(), $2, $3, $4, $5, $6) RETURNING *`,
       [cleanType, cleanTitle, cleanDesc, uid, imageUrl, cleanStatus]
     );
 
@@ -609,6 +609,7 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
     res.status(500).json({ error: 'Error deleting conversation' });
   }
 });
+
 
 // ======================= RATINGS & RANKING (READ ONLY) =======================
 // *** NUEVO: endpoints de lectura para promedios y ranking *** //ablandoa
