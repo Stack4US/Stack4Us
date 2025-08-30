@@ -8,6 +8,7 @@ export async function getAllPosts() {
     FROM post
     ORDER BY post_id DESC
   `);
+
   return result.rows;
 }
 

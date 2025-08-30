@@ -596,8 +596,6 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
   }
 });
 
-
-
 // ========================= LISTEN ============================
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto http://localhost:${PORT}`);
