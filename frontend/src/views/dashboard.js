@@ -11,46 +11,59 @@ let RATINGS_BACKEND_AVAILABLE = true; // nuevo flag
 function buildEndpoints(){
   const p = USE_API_PREFIX ? '/api' : '';
   return {
-    listPosts: `${p}/posts/all` , // en legacy es /all-posts (sobrescribimos abajo)
+    listPosts: `${p}/posts/all`,
     createPost: `${p}/posts/insert`,
     deletePost: id => `${p}/posts/${id}`,
     listAnswers: `${p}/answers`,
-    createAnswer: `${p}/answers`, // legacy: /answer
+    createAnswer: `${p}/answers`,
     deleteAnswer: id => `${p}/answers/${id}`,
     listConversations: `${p}/conversations`,
-    createConversation: `${p}/conversations`, // legacy: /conversation
-    deleteConversation: id => `${p}/conversations/${id}`, // legacy owns-conversation
-    listUsers: `${p}/users/all`, // legacy: /Users
-    ratingSummary: '/answers/ratings-summary', // sólo legacy
-    myRatings: '/my-answer-ratings',
-    rateAnswer: id => `/answers/${id}/rate`
+    createConversation: `${p}/conversations`,
+    deleteConversation: id => `${p}/conversations/${id}`,
+    listUsers: `${p}/users/all`,
+    ratingsSummary: `${p}/ratings/answers-summary`,
+    myRatings: `${p}/ratings/my-ratings`,
+    rateAnswer: id => `${p}/answers/${id}/rate`
   };
 }
 let ENDPOINTS = buildEndpoints();
 
 async function detectBackendStyle(){
-  // Intentar estilo /api
-  try {
-    const r = await fetch(`${API_BASE}/api/answers`);
-    if(r.ok){
-      USE_API_PREFIX = true;
-      RATINGS_ENABLED = true; // seguimos mostrando estrellas
-      RATINGS_BACKEND_AVAILABLE = false; // pero sin endpoints reales
-      ENDPOINTS = buildEndpoints();
-      return;
+  // Detect /api mode
+  let apiMode=false;
+  try{ const r=await fetch(`${API_BASE}/api/answers`); if(r.ok) apiMode=true; }catch{}
+  USE_API_PREFIX = apiMode;
+  ENDPOINTS = buildEndpoints();
+  if(!apiMode){
+    // legacy naming differences solo para posts/answers/conversations/users
+    ENDPOINTS.listPosts = '/all-posts';
+    ENDPOINTS.createPost = '/insert-post';
+    ENDPOINTS.deletePost = id => `/post/${id}`;
+    ENDPOINTS.createAnswer = '/answer';
+    ENDPOINTS.deleteAnswer = id => `/answer/${id}`;
+    ENDPOINTS.createConversation = '/conversation';
+    ENDPOINTS.deleteConversation = id => `/owns-conversation/${id}`;
+    ENDPOINTS.listUsers = '/Users';
+  }
+  // detectar endpoints de rating reales
+  RATINGS_BACKEND_AVAILABLE = await detectRatingsEndpoints();
+  RATINGS_ENABLED = true; // siempre mostramos UI
+}
+async function detectRatingsEndpoints(){
+  // primero intenta /api/ratings (o sin prefijo si legacy detectado)
+  try{ const r=await fetch(`${API_BASE}${ENDPOINTS.ratingsSummary}`); if(r.ok) return true; }catch{}
+  // fallback legacy viejo (/answers/ratings-summary y /my-answer-ratings)
+  try{
+    const legacySummary = '/answers/ratings-summary';
+    const test = await fetch(`${API_BASE}${legacySummary}`);
+    if(test.ok){
+      ENDPOINTS.ratingsSummary = legacySummary;
+      ENDPOINTS.myRatings = '/my-answer-ratings';
+      ENDPOINTS.rateAnswer = id => `/answers/${id}/rate`;
+      return true;
     }
   }catch{}
-  // Legacy fallback
-  USE_API_PREFIX = false; RATINGS_ENABLED = true; RATINGS_BACKEND_AVAILABLE = true; ENDPOINTS = buildEndpoints();
-  // Ajustes legacy específicos
-  ENDPOINTS.listPosts = '/all-posts';
-  ENDPOINTS.createPost = '/insert-post';
-  ENDPOINTS.deletePost = id => `/post/${id}`;
-  ENDPOINTS.createAnswer = '/answer';
-  ENDPOINTS.deleteAnswer = id => `/answer/${id}`;
-  ENDPOINTS.createConversation = '/conversation';
-  ENDPOINTS.deleteConversation = id => `/owns-conversation/${id}`; // requiere token
-  ENDPOINTS.listUsers = '/Users';
+  return false;
 }
 
 // ============ AUTH HELPERS ============
@@ -77,10 +90,10 @@ function renderStars(answerId, avg, myRating, disabled){
   return `<div class="rating" data-answer="${answerId}" style="display:flex;align-items:center;gap:4px;${disabled?'pointer-events:none;opacity:.6':''}">${stars}<span class="rate-avg" style="font-size:11px;color:#666;margin-left:6px">(${roundAvg})</span></div>`;
 }
 async function loadRatingsFromAPI(){
-  if(!RATINGS_ENABLED) return; // mantenido
-  if(!RATINGS_BACKEND_AVAILABLE) return; // backend /api sin endpoints: dejamos mapas vacíos (estrellas vacías)
-  let summary=[]; 
-  try{ summary=await getJSON(`${API_BASE}${ENDPOINTS.ratingSummary}`);}catch{ summary=[]; }
+  if(!RATINGS_ENABLED) return;
+  if(!RATINGS_BACKEND_AVAILABLE) return;
+  let summary=[];
+  try{ summary=await getJSON(`${API_BASE}${ENDPOINTS.ratingsSummary}`);}catch{ summary=[]; }
   ratingsSummaryMap.clear(); summary.forEach(r=> ratingsSummaryMap.set(Number(r.answer_id), {avg:Number(r.avg_rating)||0, count:Number(r.ratings_count)||0}));
   myRatingsMap.clear();
   if(getToken()){
@@ -168,8 +181,8 @@ export async function renderDashboardAfterTemplateLoaded(){
 
     postsEl.addEventListener('click', async e=>{
       const star=e.target.closest('.star'); if(star){
-        if(!RATINGS_ENABLED) return; // por si futuro flag
-        if(!RATINGS_BACKEND_AVAILABLE){ return alert('Ratings no disponibles en este servidor'); }
+        if(!RATINGS_ENABLED) return;
+        if(!RATINGS_BACKEND_AVAILABLE){ return alert('Ratings aún no disponibles en este servidor'); }
         const answerId=Number(star.dataset.answer); const value=Number(star.dataset.value);
         if(!getToken()) return alert('Inicia sesión de nuevo');
         const aObj=answersCache.find(a=>Number(a.answer_id)===answerId); if(!aObj) return;
