@@ -3,8 +3,7 @@ import bcrypt from 'bcrypt';
 import { uploadImage } from './cloudinary.service.js';
 import { generateToken }   from '../middlewares/auth.middleware.js';
 
-
-export async function createUser({ user_name, email, password, rol_id }) {
+export async function createUser({ user_name, email, password }) {
     const roleToInsert = 1;
 
     try {

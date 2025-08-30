@@ -71,7 +71,6 @@ export async function deleteConversation(conversation_id, user) {
     const reqUserId = parseInt(user.user_id, 10);
     const reqUserRole = parseInt(user.rol_id, 10);
 
-    // Permitir si es el dueño o si es admin
     if (convUserId !== reqUserId && reqUserRole !== 2) {
         return { error: 'You do not have permission to delete this conversation.', status: 403 };
     }

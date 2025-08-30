@@ -8,8 +8,13 @@ export async function registerUser(req, res, next) {
         if (!user_name || !email || !password) {
             return res.status(400).json({ message: 'User_name, email and password are required' });
         }
-        
-        const newUser = await userService.createUser({ user_name, email, password, rol_id });
+
+        const result = await userService.createUser({ user_name, email, password, rol_id });
+        const newUser = result.rows ? result.rows[0] : result;
+
+        if (!newUser) {
+            return res.status(500).json({ message: 'Error creating user' });
+        }
 
         res.status(201).json({
             message: 'User registered successfully',
@@ -22,7 +27,8 @@ export async function registerUser(req, res, next) {
         });
 
     } catch (err) {
-        next(err); 
+        console.error('Error registering user:', err);
+        next(err);
     }
 }
 
