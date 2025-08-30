@@ -27,23 +27,28 @@ function generateToken(user) {
     return null;
   }
 }
-
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  const parts = String(authHeader).trim().split(' ');
+  const token = parts.length === 2 && /^Bearer$/i.test(parts[0]) ? parts[1].trim() : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' })
-  };
+    return res.status(401).json({ error: 'Access token required' });
+  }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid token' });
   }
 }
+
 
 // ========================= REGISTER =========================
 app.post('/register', async (req, res) => {
@@ -88,8 +93,13 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
-  let token = generateToken(user);
-    const payload = {
+    const token = generateToken(user);
+    if (!token || token.split('.').length !== 3) {
+      // Si por algún motivo no se pudo firmar, NO mandamos fallback
+      return res.status(500).json({ error: 'Token generation failed' });
+    }
+
+    return res.status(200).json({
       message: 'Login successful',
       user: {
         id: user.user_id,
@@ -97,15 +107,15 @@ app.post('/login', async (req, res) => {
         user_name: user.user_name,
         email: user.email,
         rol_id: user.rol_id
-      }
-    };
-  payload.token = token || 'fallback-token'; // siempre enviar un token para el frontend
-    res.status(200).json(payload);
+      },
+      token
+    });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // ======================== ENDPOINTS FOR USERS ========================
 
@@ -275,28 +285,32 @@ app.put('/owns-posts/:post_id', authenticateToken, upload.single("image"), async
 app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
   const answer_id = parseInt(req.params.answer_id, 10);
   const user_id = req.user.user_id;
-  const { rating } = req.body;
+  const ratingRaw = req.body?.rating;
+
+  // validar rating
+  const rating = parseInt(ratingRaw, 10);
+  if (!Number.isInteger(answer_id) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'Invalid rating. It must be an integer between 1 and 5.' });
+  }
 
   try {
     const answerResult = await pool.query(
-      'SELECT * FROM answer WHERE answer_id = $1',
+      'SELECT user_id FROM answer WHERE answer_id = $1',
       [answer_id]
     );
     if (answerResult.rows.length === 0) {
       return res.status(404).json({ error: 'Answer dont found' });
     }
 
-    const answer = answerResult.rows[0];
-
-    if (answer.user_id === user_id) {
+    const answerOwnerId = answerResult.rows[0].user_id;
+    if (answerOwnerId === user_id) {
       return res.status(403).json({ error: 'You cant rating your own answer' });
     }
 
     const existingRating = await pool.query(
-      'SELECT * FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
+      'SELECT 1 FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
       [answer_id, user_id]
     );
-
     if (existingRating.rows.length > 0) {
       return res.status(400).json({ error: 'This answer is already rating' });
     }
@@ -306,13 +320,13 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
       [answer_id, user_id, rating]
     );
 
-    res.status(201).json({ message: 'Rating register succesfully' });
-
+    return res.status(201).json({ message: 'Rating register succesfully' });
   } catch (error) {
     console.error('Error rating answer:', error);
-    res.status(500).json({ error: 'Error in server' });
+    return res.status(500).json({ error: 'Error in server' });
   }
 });
+
 
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
@@ -444,7 +458,6 @@ app.get('/answers', async (_req, res) => {
 app.post('/answer', upload.single("image"), async (req, res) => {
   const { description, user_id, post_id } = req.body;
   let image = null;
-
   if (!description || description.trim() === '') {
     return res.status(400).json({ error: 'Description is required' });
   }
@@ -454,33 +467,32 @@ app.post('/answer', upload.single("image"), async (req, res) => {
   if (!post_id || isNaN(post_id)) {
     return res.status(400).json({ error: 'Valid post_id is required' });
   }
-
   try {
-
-    const postExists = await pool.query('SELECT post_id FROM post WHERE post_id = $1', [post_id]);
-    if (postExists.rows.length === 0) {
+    const postResult = await pool.query('SELECT user_id FROM post WHERE post_id = $1', [post_id]);
+    if (postResult.rows.length === 0) {
       return res.status(400).json({ error: 'Post does not exist' });
     }
-  
+    const postOwnerId = postResult.rows[0].user_id;
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [user_id]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-  
     if (req.file) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
         folder: "answers",
       });
       image = uploadResult.secure_url;
     }
-
     const result = await pool.query(
       'INSERT INTO answer (description, user_id, post_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), user_id, post_id, image]
     );
+        if (user_id != postOwnerId) { await pool.query(
+          "INSERT INTO notifications (user_id, message, date, status) VALUES ($1, $2, NOW(), 'unread')",
+          [postOwnerId, `Tienes una nueva respuesta en tu post`]
+        ); }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting answer:', err);
@@ -509,7 +521,6 @@ app.delete('/answer/:id', async (req, res) => {
 app.post('/conversation', upload.single("image"), async (req, res) => {
   const { description, user_id, answer_id } = req.body;
   let image = null;
-
   const uid = parseInt(user_id, 10);
   const aid = parseInt(answer_id, 10);
 
@@ -522,33 +533,36 @@ app.post('/conversation', upload.single("image"), async (req, res) => {
   if (!aid || isNaN(aid)) {
     return res.status(400).json({ error: 'Valid answer_id is required' });
   }
-
   try {
-
-    const answerExists = await pool.query('SELECT answer_id FROM answer WHERE answer_id = $1', [aid]);
-    if (answerExists.rows.length === 0) {
+    const answerResult = await pool.query('SELECT user_id, post_id FROM answer WHERE answer_id = $1', [aid]);
+    if (answerResult.rows.length === 0) {
       return res.status(400).json({ error: 'Answer does not exist' });
     }
-  
+    const answerOwnerId = answerResult.rows[0].user_id;
+    const postId = answerResult.rows[0].post_id;
     const userExists = await pool.query('SELECT user_id FROM users WHERE user_id = $1', [uid]);
     if (userExists.rows.length === 0) {
       return res.status(400).json({ error: 'User does not exist' });
     }
-  
     if (req.file && req.file.buffer) {
       const b64 = req.file.buffer.toString("base64");
       const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
         folder: "conversation",
       });
       image = uploadResult.secure_url;
     }
-
     const result = await pool.query(
       'INSERT INTO conversation (description, user_id, answer_id, image) VALUES ($1, $2, $3, $4) RETURNING *',
       [description.trim(), uid, aid, image]
     );
+    // Solo enviar notificación si el que comenta no es el dueño de la respuesta
+    if (uid !== answerOwnerId) {
+      await pool.query(
+        "INSERT INTO notifications (user_id, message, date, status) VALUES ($1, $2, NOW(), 'unread')",
+        [answerOwnerId, `Tienes un nuevo comentario en tu respuesta`]
+      );
+    }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error inserting conversation:', err);
@@ -593,6 +607,142 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
   } catch (err) {
     console.error(`Error deleting conversation ${conversation_id}:`, err);
     res.status(500).json({ error: 'Error deleting conversation' });
+  }
+});
+
+
+// ======================= RATINGS & RANKING (READ ONLY) =======================
+// *** NUEVO: endpoints de lectura para promedios y ranking *** //ablandoa
+
+// Promedios por answer (avg + count)
+app.get('/answers/ratings-summary', async (_req, res) => { //ablandoa
+  try {
+    const q = `
+      SELECT
+        answer_id,
+        AVG(rating)::float AS avg_rating,
+        COUNT(*)::int     AS ratings_count
+      FROM answer_ratings
+      GROUP BY answer_id
+    `;
+    const r = await pool.query(q);
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /answers/ratings-summary:', err);
+    res.status(500).json({ error: 'Error fetching ratings summary' });
+  }
+}); //ablandoa
+
+// Mis calificaciones (para deshabilitar estrellas si ya califiqué)
+app.get('/my-answer-ratings', authenticateToken, async (req, res) => { //ablandoa
+  try {
+    const me = req.user.user_id;
+    const r = await pool.query(
+      `SELECT rating_id, answer_id, user_id, rating
+       FROM answer_ratings
+       WHERE user_id = $1`,
+      [me]
+    );
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /my-answer-ratings:', err);
+    res.status(500).json({ error: 'Error fetching my ratings' });
+  }
+}); //ablandoa
+
+// Resumen por usuario autor (promedio global de sus answers)
+app.get('/users/:user_id/rating/summary', async (req, res) => { //ablandoa
+  try {
+    const uid = parseInt(req.params.user_id, 10);
+    if (Number.isNaN(uid)) return res.status(400).json({ error: 'Invalid user_id' });
+
+    const q = `
+      SELECT
+        a.user_id,
+        AVG(ar.rating)::float            AS avg_rating,
+        COUNT(ar.rating)::int            AS ratings_count,
+        COUNT(DISTINCT a.answer_id)::int AS answers_with_votes
+      FROM answer a
+      LEFT JOIN answer_ratings ar ON ar.answer_id = a.answer_id
+      WHERE a.user_id = $1
+      GROUP BY a.user_id
+    `;
+    const r = await pool.query(q, [uid]);
+    if (!r.rows.length) {
+      return res.status(200).json({ user_id: uid, avg_rating: 0, ratings_count: 0, answers_with_votes: 0 });
+    }
+    res.status(200).json(r.rows[0]);
+  } catch (err) {
+    console.error('Error /users/:user_id/rating/summary:', err);
+    res.status(500).json({ error: 'Error fetching user rating summary' });
+  }
+}); //ablandoa
+
+// Ranking Top-N por mejor promedio. Empate: más answers con votos.
+// Filtros: ?min_votes=1&role=1&limit=10
+app.get('/ranking', async (req, res) => { //ablandoa
+  try {
+    const minVotes = Math.max(1, parseInt(req.query.min_votes ?? '1', 10));
+    const role = req.query.role ? String(req.query.role) : null; // '1'|'2'|'3'
+    const limit = Math.max(1, parseInt(req.query.limit ?? '10', 10));
+
+    const sql = `
+      SELECT
+        u.user_id,
+        u.user_name,
+        u.email,
+        u.rol_id,
+        u.profile_image,
+        AVG(ar.rating)::float            AS avg_rating,
+        COUNT(ar.rating)::int            AS ratings_count,
+        COUNT(DISTINCT a.answer_id)::int AS answers_with_votes
+      FROM users u
+      JOIN answer a ON a.user_id = u.user_id
+      LEFT JOIN answer_ratings ar ON ar.answer_id = a.answer_id
+      ${role ? 'WHERE u.rol_id = $1' : ''}
+      GROUP BY u.user_id
+      HAVING COUNT(ar.rating) >= ${minVotes}
+      ORDER BY avg_rating DESC NULLS LAST,
+               answers_with_votes DESC,
+               u.user_id ASC
+      LIMIT ${limit}
+    `;
+    const r = role ? await pool.query(sql, [role]) : await pool.query(sql);
+    res.status(200).json(r.rows);
+  } catch (err) {
+    console.error('Error /ranking:', err);
+    res.status(500).json({ error: 'Error building ranking' });
+  }
+}); //ablandoa
+
+
+// ======================== NOTIFICATIONS  ========================
+
+// ======================== GET ALL NOTIFICATIONS  ========================
+app.get("/get-all-notifications/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const notifications = await pool.query(
+      "SELECT * FROM notifications WHERE user_id = $1 ORDER BY date DESC",
+      [user_id]
+    );
+    res.json(notifications.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching notifications" });
+  }
+});
+
+// ======================== NOTIFICATION STATUS ========================
+app.patch("/notifications/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query(
+      "UPDATE notifications SET status = 'read' WHERE notification_id = $1",
+      [id]
+    );
+    res.json({ message: "Notificación marcada como leída" });
+  } catch (err) {
+    res.status(500).json({ error: "Error actualizando notificación" });
   }
 });
 
