@@ -1,6 +1,13 @@
+<<<<<<< HEAD
 // Dashboard view logic (fetching and rendering)
 // Este archivo administra la carga de posts, respuestas y conversaciones (replies a answers)
 // FRONT aplica reglas de permisos visuales (backend sigue validando)
+=======
+// Dashboard view logic (fetching and rendering) //ablandoa
+// Este archivo administra la carga de posts y sus respuestas, además
+// de aplicar reglas de permisos en el FRONT (no reemplaza validación backend). //ablandoa
+const API = 'http://localhost:3000/api'; // actualizado a /api
+>>>>>>> bugfix/update-front
 
 const API_ROOT = 'http://localhost:3000/api'; // base backend unificada
 
@@ -40,9 +47,48 @@ async function loadRatingsFromAPI(){ /* noop */ }
 let conversationsCache = []; // lista cruda
 function groupConversations(list){ const map=new Map(); list.forEach(c=>{ const arr=map.get(c.answer_id)||[]; arr.push(c); map.set(c.answer_id,arr); }); return map; }
 
+<<<<<<< HEAD
 // Helpers nombres/avatars (simplificado: backend no expone listado abierto de usuarios)
 function userName(id){ return `User #${id}`; }
 function userAvatar(){ return ''; }
+=======
+async function loadRatingsFromAPI() { /* endpoints de rating no existen aún; noop */ } //ablandoa
+// =================== END RATING UTILITIES (NEW) ===================== //ablandoa
+
+
+function postCard(p, answersByPost) { // dibuja una tarjeta de post //ablandoa
+  let storedRole = localStorage.getItem('role'); // puede venir como id numerico (1,2,3) o alias //ablandoa
+  // Mapeo numerico -> alias //ablandoa
+  if (storedRole === '1') storedRole = 'coder';
+  else if (storedRole === '2') storedRole = 'team_leader';
+  else if (storedRole === '3') storedRole = 'admin';
+  const userRole = storedRole; // usar alias normalizado //ablandoa
+  const me = Number(localStorage.getItem('user_id')); // id usuario logueado //ablandoa
+  const isOwner = Number(p.user_id) === Number(me); // comparación robusta numérica //ablandoa
+
+  // Tabla de permisos front (NO segura):
+  const canEdit = (userRole === 'admin') || (userRole === 'coder' && isOwner) || (userRole === 'team_leader' && isOwner); //ablandoa
+  const canDelete = (userRole === 'admin') || (userRole === 'team_leader') || (userRole === 'coder' && isOwner); //ablandoa
+
+  const hasImg = Boolean(p.image && String(p.image).trim()); //ablandoa
+  const imageBox = hasImg
+    ? `<div class="post-image-box" data-full="${p.image}"><img src="${p.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
+    : `<div class="post-image-box is-empty">IMG</div>`; // caja amplia o placeholder
+
+  const answers = answersByPost.get(p.post_id) || []; // respuestas agrupadas //ablandoa
+  const answersHTML = answers.length
+    ? `<div class="answers-wrap" style="margin-top:8px">${
+        answers.map(a => `
+          <div class='answer-item' data-answer='${a.answer_id}' style='font-size:12px;margin:4px 0;padding:6px 8px;background:#f7f7f9;border:1px solid #eee;border-radius:6px'>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div><b>#${a.user_id}</b>: ${a.description || ''}</div>
+              <div class="rating-slot" data-answer="${a.answer_id}"></div>
+            </div>
+          </div>`
+        ).join('')
+      }</div>`
+    : '';
+>>>>>>> bugfix/update-front
 
 // ======== POST CARD RENDER ========
 function postCard(post, answersByPost, convByAnswer){
@@ -111,11 +157,21 @@ export async function renderDashboardAfterTemplateLoaded(){
   let answersCache = [];
   function groupAnswers(list){ const map=new Map(); list.forEach(a=>{ const arr=map.get(a.post_id)||[]; arr.push(a); map.set(a.post_id,arr); }); return map; }
 
+<<<<<<< HEAD
   async function loadPosts(){
     const posts = await getJSON(`${API_ROOT}/posts/all`);
     let overrides={}; try { overrides = JSON.parse(localStorage.getItem('post_overrides')||'{}'); } catch { overrides={}; }
     const merged = posts.map(p=> overrides[p.post_id]? { ...p, ...overrides[p.post_id]}: p);
     if(qEl) qEl.textContent = posts.length;
+=======
+  async function loadPosts() { // carga posts y renderiza //ablandoa
+    const posts = await getJSON(`${API}/posts/all`);
+    // Aplicar overrides locales (ediciones simuladas)
+    let overrides = {};
+    try { overrides = JSON.parse(localStorage.getItem('post_overrides')||'{}'); } catch { overrides = {}; }
+    const merged = posts.map(p => overrides[p.post_id] ? { ...p, ...overrides[p.post_id] } : p);
+    if (qEl) qEl.textContent = posts.length;
+>>>>>>> bugfix/update-front
     const answersByPost = groupAnswers(answersCache);
     const convByAnswer = groupConversations(conversationsCache||[]);
     if(postsEl){
@@ -132,12 +188,43 @@ export async function renderDashboardAfterTemplateLoaded(){
       e.preventDefault(); if(hint) hint.textContent='Publicando…';
       try {
         const fd = new FormData(form);
+<<<<<<< HEAD
         const uid = localStorage.getItem('user_id'); if(uid) fd.set('user_id', uid);
         const type = String(fd.get('type')||'').toLowerCase().trim(); const status=String(fd.get('status')||'').toLowerCase().trim(); if(type) fd.set('type', type); if(status) fd.set('status', status);
         const r = await fetch(`${API_ROOT}/posts/insert`, { method:'POST', body: fd });
         if(!r.ok){ let msg='Error al crear el post.'; try { const data=await r.json(); if(data?.detail||data?.error) msg=`Error al crear el post: ${data.detail||data.error}`; } catch {} throw new Error(msg); }
         form.reset(); if(hint) hint.textContent='¡Post creado!'; await loadPosts();
       } catch(err){ console.error(err); if(hint) hint.textContent=err.message||'Error al crear el post.'; }
+=======
+        const uid = localStorage.getItem('user_id');
+        if (uid) fd.set('user_id', uid);
+
+        const type = String(fd.get('type') || '').toLowerCase().trim();
+        const status = String(fd.get('status') || '').toLowerCase().trim();
+        if (type) fd.set('type', type);
+        if (status) fd.set('status', status);
+
+        // insert-post NO requiere auth en backend, pero dejamos como estaba //ablandoa
+        const r = await fetch(`${API}/posts/insert`, { method: 'POST', body: fd });
+        if (!r.ok) {
+          let msg = 'Error al crear el post.';
+          try {
+            const data = await r.json();
+            if (data?.detail || data?.error) {
+              msg = `Error al crear el post: ${data.detail || data.error}`;
+            }
+          } catch { /* ignore */ }
+          throw new Error(msg);
+        }
+
+        form.reset();
+        if (hint) hint.textContent = '¡Post creado!';
+        await loadPosts();
+      } catch (err) {
+        console.error(err);
+        if (hint) hint.textContent = err.message || 'Error al crear el post.';
+      }
+>>>>>>> bugfix/update-front
     });
   }
 
@@ -149,10 +236,25 @@ export async function renderDashboardAfterTemplateLoaded(){
         if(btn.classList.contains('btn-delete')){
           if(!confirm('Eliminar post?')) return;
           try {
+<<<<<<< HEAD
             const r = await apiFetch(`/posts/${id}`, { method:'DELETE' });
             if(r.ok){ try { const o=JSON.parse(localStorage.getItem('post_overrides')||'{}'); delete o[id]; localStorage.setItem('post_overrides', JSON.stringify(o)); } catch {} await loadPosts(); }
             else { try { const err=await r.json(); console.error(err); alert(err.error||'Error eliminando'); } catch {} }
           } catch(err){ console.error(err); }
+=======
+            const r = await apiFetch(`/posts/${id}`, { method: 'DELETE' }); // actualizado
+            if (r.ok) {
+              try {
+                const o = JSON.parse(localStorage.getItem('post_overrides')||'{}');
+                delete o[id];
+                localStorage.setItem('post_overrides', JSON.stringify(o));
+              } catch {}
+              await loadPosts();
+            } else {
+              try { const err=await r.json(); console.error(err); alert(err.error||'Error eliminando'); } catch(_) {}
+            }
+          } catch (err) { console.error(err); }
+>>>>>>> bugfix/update-front
         }
         if(btn.classList.contains('btn-edit')){
           const article = btn.closest('article');
@@ -170,6 +272,40 @@ export async function renderDashboardAfterTemplateLoaded(){
         }
         return;
       }
+<<<<<<< HEAD
+=======
+
+      // ---- calificar con estrella ----
+      if (star) {
+        const answerId = Number(star.dataset.answer);
+        const value = Number(star.dataset.value);
+        const tokenExists = !!getToken(); //ablandoa
+        const me = Number(localStorage.getItem('user_id') || 0);
+        if (!tokenExists) { alert('Sesión expirada. Reloguea.'); return; }
+
+        const aObj = answersCache.find(x => Number(x.answer_id) === answerId);
+        if (!aObj) return;
+        if (Number(aObj.user_id) === me) { alert('No puedes calificar tu propia respuesta'); return; }
+        if (myRatingsMap.has(answerId)) { alert('Ya calificaste esta respuesta'); return; }
+        if (!(value >= 1 && value <= STAR_MAX)) return;
+
+        try {
+          const r = await apiFetch(`/answers/${answerId}/rate`, {
+            method: 'POST',
+            body: JSON.stringify({ rating: value })
+          }); // usa Bearer + maneja 401/403 //ablandoa
+          if (!r.ok) {
+            const err = await r.json().catch(()=> ({}));
+            alert(err?.error || 'No se pudo registrar la calificación');
+            return;
+          }
+          await loadPosts();
+        } catch (err) {
+          console.error(err);
+          // apiFetch ya alerta en 401/403 //ablandoa
+        }
+      }
+>>>>>>> bugfix/update-front
     });
     // Submit nueva answer
     postsEl.addEventListener('submit', async (e)=>{
@@ -180,6 +316,7 @@ export async function renderDashboardAfterTemplateLoaded(){
       const uid = localStorage.getItem('user_id'); if(!uid){ alert('Sesión inválida'); return; }
       const fd = new FormData(); fd.append('description', txt); fd.append('user_id', uid); fd.append('post_id', postId);
       try {
+<<<<<<< HEAD
         const r = await apiFetch('/answers', { method:'POST', body: fd });
         if(r.ok){ input.value=''; await loadAnswers(); await loadConversations(); await loadPosts(); }
         else console.error(await r.json().catch(()=>({})));
@@ -220,6 +357,16 @@ export async function renderDashboardAfterTemplateLoaded(){
           const r = await apiFetch(`/answers/${id}`, { method:'DELETE' }); if(!r.ok) console.error('Fail delete answer', await r.json().catch(()=>({})) );
         } else if(type==='conversation') {
           const r = await apiFetch(`/conversations/${id}`, { method:'DELETE' }); if(!r.ok) console.error('Fail delete conv', await r.json().catch(()=>({})) );
+=======
+        // usa apiFetch con FormData (no fuerza Content-Type) y agrega Bearer si existe //ablandoa
+        const r = await apiFetch(`/answers`, { method:'POST', body: fd });
+        if(r.ok){
+          input.value='';
+          await loadAnswers();
+          await loadPosts();
+        } else {
+          console.error(await r.json());
+>>>>>>> bugfix/update-front
         }
         await loadAnswers(); await loadConversations(); await loadPosts();
       } catch(err){ console.error(err); }
@@ -227,8 +374,11 @@ export async function renderDashboardAfterTemplateLoaded(){
   }
 
   await loadAnswers();
+<<<<<<< HEAD
   await loadConversations();
   await loadRatingsFromAPI(); // noop
+=======
+>>>>>>> bugfix/update-front
   await loadPosts();
   setupLightboxRoot();
 }
