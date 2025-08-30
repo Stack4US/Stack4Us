@@ -3,6 +3,8 @@
 // Validaciones reales van en el backend.
 
 const API_BASE = 'http://localhost:3000/api';
+const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png'; // imagen por defecto
+const RATINGS_ENABLED = false; // poner true cuando existan endpoints de rating en backend
 
 // ============ AUTH HELPERS ============
 function looksLikeJWT(t){ return typeof t==='string' && t.split('.').length===3; }
@@ -10,15 +12,35 @@ function getToken(){ const raw=(localStorage.getItem('token')||'').trim(); retur
 function buildAuthHeaders(body, extra={}){ const token=getToken(); const base=(body instanceof FormData)?{...(extra||{})}:{'Content-Type':'application/json',...(extra||{})}; return token?{...base,Authorization:`Bearer ${token}`} : base; }
 async function apiFetch(path,opt={}){ const url=path.startsWith('http')?path:`${API_BASE}${path}`; const headers=buildAuthHeaders(opt.body,opt.headers); const resp=await fetch(url,{...opt,headers}); if(resp.status===401||resp.status===403){ alert('Sesión expirada. Inicia otra vez.'); localStorage.removeItem('token'); localStorage.setItem('Auth','false'); try{ const {navigate}=await import('../main'); navigate('/login'); }catch{} throw new Error('Unauthorized'); } return resp; }
 
-// ============ PLACEHOLDER RATING (sin backend) ============
-function injectRatingsUI(){/* noop */}
-
-// ============ CONVERSATIONS CACHE ============
+// ============ CONVERSATIONS & USERS CACHE ============
 let conversationsCache=[]; // lista de conversation
+let usersMap=new Map(); // user_id -> user
 function groupConversations(list){ const m=new Map(); list.forEach(c=>{ const arr=m.get(c.answer_id)||[]; arr.push(c); m.set(c.answer_id,arr); }); return m; }
-function userName(id){ return `User #${id}`; } // placeholder (no hay endpoint de usuarios global)
+function userName(id){ const u=usersMap.get(Number(id)); return u?.user_name || `User #${id}`; }
+function userAvatar(id){ const u=usersMap.get(Number(id)); return u?.profile_image || DEFAULT_AVATAR; }
 
 // ============ RENDER DE CARDS ============
+const STAR_MAX = 5;
+let ratingsSummaryMap = new Map(); // answer_id -> {avg,count}
+let myRatingsMap = new Map();      // answer_id -> myRating
+
+function renderStars(answerId, avg, myRating, disabled){
+  const roundAvg = isFinite(avg)? (Math.round(avg*10)/10).toFixed(1) : '0.0';
+  const stars = Array.from({length:STAR_MAX}, (_,i)=>{ const v=i+1; const filled = myRating? v<=myRating : v<=Math.round(avg||0); return `<span class="star ${filled?'filled':'empty'}" data-answer="${answerId}" data-value="${v}" title="${v}">${filled?'★':'☆'}</span>`; }).join('');
+  return `<div class="rating" data-answer="${answerId}" style="display:flex;align-items:center;gap:4px;${disabled?'pointer-events:none;opacity:.6':''}">${stars}<span class="rate-avg" style="font-size:11px;color:#666;margin-left:6px">(${roundAvg})</span></div>`;
+}
+async function loadRatingsFromAPI(){
+  if(!RATINGS_ENABLED) return; // evita 404
+  let summary=[]; try{ summary=await getJSON(`${API_BASE}/answers/ratings-summary`);}catch{ summary=[]; }
+  ratingsSummaryMap.clear(); summary.forEach(r=> ratingsSummaryMap.set(Number(r.answer_id), {avg:Number(r.avg_rating)||0, count:Number(r.ratings_count)||0}));
+  myRatingsMap.clear(); if(getToken()){ try{ const mine=await apiFetch('/my-answer-ratings').then(r=>r.ok?r.json():[]); mine.forEach(r=> myRatingsMap.set(Number(r.answer_id), Number(r.rating))); }catch{} }
+}
+function injectRatingsUI(rootEl, answersCache){
+  const me=Number(localStorage.getItem('user_id')||0);
+  rootEl.querySelectorAll('.rating-slot[data-answer]').forEach(slot=>{
+    const answerId=Number(slot.dataset.answer); const info=ratingsSummaryMap.get(answerId)||{avg:0,count:0}; const myR=myRatingsMap.get(answerId)||null; const aObj=answersCache.find(a=>Number(a.answer_id)===answerId); const isMine=aObj && Number(aObj.user_id)===me; slot.innerHTML=`${renderStars(answerId, info.avg, myR, isMine)}<small style='display:block;text-align:right;color:#888;margin-top:2px'>${info.count||0} voto(s)</small>`; });
+}
+
 function postCard(post, answersByPost, convByAnswer){
   let role = localStorage.getItem('role');
   if(role==='1') role='coder'; else if(role==='2') role='team_leader'; else if(role==='3') role='admin';
@@ -30,29 +52,9 @@ function postCard(post, answersByPost, convByAnswer){
   const imageBox = hasImg? `<div class="post-image-box" data-full="${post.image}"><img src="${post.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>` : `<div class="post-image-box is-empty">IMG</div>`;
   const answers = answersByPost.get(post.post_id)||[];
   const answersHTML = answers.length ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>{
-    const convs = convByAnswer.get(a.answer_id)||[];
-    const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{
-      const raw=c.description||''; const directed=raw.match(/^@(\S+)/); const bodyHTML=raw.replace(/^@(\S+)/,(m,u)=>`<span class='mention'>@${u}</span>`);
-      const canDelConv = me===Number(c.user_id);
-      return `<div class='conversation-item${directed?' is-directed':''}' data-conv='${c.conversation_id}'>
-        <div class='ig-comment-line'>
-          <span class='ig-user'>${userName(c.user_id)}</span>
-          <span class='ig-text'>${bodyHTML}</span>
-        </div>
-        <div class='ig-actions-row'>
-          <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${c.user_id}' data-source='conversation'>Responder</button>
-          ${canDelConv?`<button class='ig-action comment-delete' data-type='conversation' data-conv='${c.conversation_id}'>Eliminar</button>`:''}
-        </div>
-      </div>`;}).join('')}</div>`: '';
+    const convs = convByAnswer.get(a.answer_id)||[]; const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{ const raw=c.description||''; const directed=raw.match(/^@(\S+)/); const bodyHTML=raw.replace(/^@(\S+)/,(m,u)=>`<span class='mention'>@${u}</span>`); const canDelConv = me===Number(c.user_id); return `<div class='conversation-item${directed?' is-directed':''}' data-conv='${c.conversation_id}'> <div class='ig-comment-line'><img class='ig-avatar' src='${userAvatar(c.user_id)}' alt='avatar' style='width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:4px;' onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" /> <span class='ig-user'>${userName(c.user_id)}</span> <span class='ig-text'>${bodyHTML}</span></div> <div class='ig-actions-row'><button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${c.user_id}' data-source='conversation'>Responder</button> ${canDelConv?`<button class='ig-action comment-delete' data-type='conversation' data-conv='${c.conversation_id}'>Eliminar</button>`:''}</div></div>`; }).join('')}</div>`: '';
     const canDelAnswer = (role==='admin') || me===Number(a.user_id);
-    return `<div class='answer-item ig-comment' data-answer='${a.answer_id}'>
-      <div class='ig-comment-line'><span class='ig-user'>${userName(a.user_id)}</span><span class='ig-text'>${a.description||''}</span></div>
-      <div class='ig-actions-row'>
-        <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button>
-        ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Eliminar</button>`:''}
-      </div>
-      <div class='ig-replies'>${convHTML}</div>
-    </div>`;}).join('')}</div>` : '';
+    return `<div class='answer-item ig-comment' data-answer='${a.answer_id}'> <div class='ig-comment-line'><img class='ig-avatar' src='${userAvatar(a.user_id)}' alt='avatar' style='width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:6px;' onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" /> <span class='ig-user'>${userName(a.user_id)}</span> <span class='ig-text'>${a.description||''}</span></div> <div class='ig-actions-row'><button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button> ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Eliminar</button>`:''} <div class='rating-slot' data-answer='${a.answer_id}'></div></div> <div class='ig-replies'>${convHTML}</div></div>`; }).join('')}</div>` : '';
   return `<article class="card post-card">
     <h4>${post.title || ''}</h4>
     <div class="post-meta"><span>Tipo: ${post.type||'-'}</span> · <span>Estado: ${post.status||'unsolved'}</span> · <span>Autor #${post.user_id||'-'}</span></div>
@@ -77,6 +79,7 @@ export async function renderDashboardAfterTemplateLoaded(){
   let answersCache=[];
   function groupAnswers(list){ const m=new Map(); list.forEach(a=>{ const arr=m.get(a.post_id)||[]; arr.push(a); m.set(a.post_id,arr); }); return m; }
 
+  async function loadUsers(){ try{ const r=await apiFetch('/users/all'); if(r.ok){ const data=await r.json(); usersMap=new Map(data.map(u=>[Number(u.user_id),u])); } }catch(err){ console.warn('No se pudieron cargar usuarios', err); } }
   async function loadAnswers(){ answersCache = await getJSON(`${API_BASE}/answers`); if(aEl) aEl.textContent=answersCache.length; if(pEl) pEl.textContent=String(answersCache.length*10); }
   async function loadConversations(){ try{ conversationsCache = await getJSON(`${API_BASE}/conversations`);}catch{ conversationsCache=[]; } }
   async function loadPosts(){
@@ -86,7 +89,7 @@ export async function renderDashboardAfterTemplateLoaded(){
     if(qEl) qEl.textContent=posts.length;
     const answersByPost = groupAnswers(answersCache);
     const convByAnswer = groupConversations(conversationsCache);
-    if(postsEl){ postsEl.innerHTML = merged.length? merged.slice().reverse().map(p=>postCard(p,answersByPost,convByAnswer)).join('') : '<div class="card" style="padding:10px">No posts.</div>'; injectRatingsUI(postsEl, answersCache); attachImageLightboxHandlers(); }
+    if(postsEl){ postsEl.innerHTML = merged.length? merged.slice().reverse().map(p=>postCard(p,answersByPost,convByAnswer)).join('') : '<div class="card" style="padding:10px">No posts.</div>'; if(RATINGS_ENABLED) injectRatingsUI(postsEl, answersCache); attachImageLightboxHandlers(); }
   }
 
   if(form){ form.addEventListener('submit', async e=>{ e.preventDefault(); if(hint) hint.textContent='Publicando…'; try{ const fd=new FormData(form); const uid=localStorage.getItem('user_id'); if(uid) fd.set('user_id', uid); const type=String(fd.get('type')||'').trim().toLowerCase(); const status=String(fd.get('status')||'').trim().toLowerCase(); if(type) fd.set('type', type); if(status) fd.set('status', status); const r=await fetch(`${API_BASE}/posts/insert`, {method:'POST', body:fd}); if(!r.ok){ let msg='Error al crear el post.'; try{ const d=await r.json(); if(d?.detail||d?.error) msg=`Error al crear el post: ${d.detail||d.error}`; }catch{} throw new Error(msg); } form.reset(); if(hint) hint.textContent='¡Post creado!'; await loadPosts(); }catch(err){ console.error(err); if(hint) hint.textContent=err.message||'Error al crear el post.'; } }); }
@@ -108,9 +111,15 @@ export async function renderDashboardAfterTemplateLoaded(){
 
     // eliminar answer o conversation
     postsEl.addEventListener('click', async e=>{ const del=e.target.closest('.comment-delete'); if(!del) return; e.preventDefault(); if(!confirm('Eliminar?')) return; const type=del.dataset.type; const id=del.dataset.answer||del.dataset.conv; try{ if(type==='answer'){ const r=await apiFetch(`/answers/${id}`, {method:'DELETE'}); if(!r.ok) console.error('Fail delete answer', await r.json().catch(()=>({}))); } else { const r=await apiFetch(`/conversations/${id}`, {method:'DELETE'}); if(!r.ok) console.error('Fail delete conv', await r.json().catch(()=>({}))); } await loadAnswers(); await loadConversations(); await loadPosts(); }catch(err){ console.error(err); } });
+
+    postsEl.addEventListener('click', async e=>{
+      const star=e.target.closest('.star'); if(star){ const answerId=Number(star.dataset.answer); const value=Number(star.dataset.value); if(!getToken()) return alert('Inicia sesión de nuevo'); const aObj=answersCache.find(a=>Number(a.answer_id)===answerId); if(!aObj) return; if(Number(aObj.user_id)===Number(localStorage.getItem('user_id'))) return alert('No puedes calificar tu propia respuesta'); if(myRatingsMap.has(answerId)) return alert('Ya calificaste'); if(!(value>=1&&value<=STAR_MAX)) return; try{ const r=await apiFetch(`/answers/${answerId}/rate`, {method:'POST', body:JSON.stringify({rating:value})}); if(!r.ok){ const err=await r.json().catch(()=>({})); return alert(err.error||'Error rating'); } await loadRatingsFromAPI(); await loadPosts(); }catch(err){ console.error(err); } }
+    });
   }
 
+  await loadUsers();
   await loadAnswers();
+  if(RATINGS_ENABLED) await loadRatingsFromAPI();
   await loadConversations();
   await loadPosts();
   setupLightboxRoot();
