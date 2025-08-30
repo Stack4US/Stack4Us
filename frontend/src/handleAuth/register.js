@@ -19,7 +19,7 @@ function register(apiBase) {
 
     const payload = { user_name, email, password };
     try {
-      const regResp = await axios.post(`${apiBase}/register`, payload, { headers: { 'Content-Type': 'application/json' }});
+      const regResp = await axios.post(`${apiBase}/api/users/register`, payload, { headers: { 'Content-Type': 'application/json' }});
       if (regResp.status !== 201) {
         alert('Error registrando');
         return;
@@ -33,7 +33,7 @@ function register(apiBase) {
 
       // Auto-login rápido para obtener user_id y token
       try {
-        const loginResp = await axios.post(`${apiBase}/login`, { user_name, password });
+        const loginResp = await axios.post(`${apiBase}/api/users/login`, { user_name, password });
         const user = loginResp.data?.user;
         const token = loginResp.data?.token;
         if (user?.user_id) {

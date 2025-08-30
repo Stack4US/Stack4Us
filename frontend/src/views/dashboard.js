@@ -1,7 +1,7 @@
 // Dashboard view logic (fetching and rendering) //ablandoa
 // Este archivo administra la carga de posts y sus respuestas, además
 // de aplicar reglas de permisos en el FRONT (no reemplaza validación backend). //ablandoa
-const API = 'http://localhost:3000'; // keep in sync with backend base URL //ablandoa
+const API = 'http://localhost:3000/api'; // actualizado a /api
 
 // ======== AUTH HELPERS (nuevo, no rompe nada) ======== //ablandoa
 function looksLikeJWT(t) { return typeof t === 'string' && t.split('.').length === 3; } //ablandoa
@@ -74,22 +74,7 @@ function injectRatingsUI(rootEl, answersCache) { //ablandoa
   }); //ablandoa
 } //ablandoa
 
-async function loadRatingsFromAPI() { //ablandoa
-  // Resumen por answer
-  let summary = []; //ablandoa
-  try { summary = await getJSON(`${API}/answers/ratings-summary`); } catch { summary = []; } //ablandoa
-  ratingsSummaryMap.clear(); //ablandoa
-  summary.forEach(r => { ratingsSummaryMap.set(Number(r.answer_id), { avg: Number(r.avg_rating) || 0, count: Number(r.ratings_count) || 0 }); }); //ablandoa
-
-  // Mis calificaciones (si hay token)
-  myRatingsMap.clear(); //ablandoa
-  if (getToken()) { //ablandoa
-    try {
-      const myList = await apiFetch(`/my-answer-ratings`).then(r => r.ok ? r.json() : []); //ablandoa
-      myList.forEach(r => myRatingsMap.set(Number(r.answer_id), Number(r.rating))); //ablandoa
-    } catch { /* ignore */ }
-  }
-} //ablandoa
+async function loadRatingsFromAPI() { /* endpoints de rating no existen aún; noop */ } //ablandoa
 // =================== END RATING UTILITIES (NEW) ===================== //ablandoa
 
 
@@ -176,7 +161,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
   }
 
   async function loadPosts() { // carga posts y renderiza //ablandoa
-    const posts = await getJSON(`${API}/all-posts`);
+    const posts = await getJSON(`${API}/posts/all`);
     // Aplicar overrides locales (ediciones simuladas)
     let overrides = {};
     try { overrides = JSON.parse(localStorage.getItem('post_overrides')||'{}'); } catch { overrides = {}; }
@@ -216,7 +201,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         if (status) fd.set('status', status);
 
         // insert-post NO requiere auth en backend, pero dejamos como estaba //ablandoa
-        const r = await fetch(`${API}/insert-post`, { method: 'POST', body: fd });
+        const r = await fetch(`${API}/posts/insert`, { method: 'POST', body: fd });
         if (!r.ok) {
           let msg = 'Error al crear el post.';
           try {
@@ -249,7 +234,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         if (btn.classList.contains('btn-delete')) { // eliminar post
           if (!confirm('Eliminar post?')) return;
           try {
-            const r = await apiFetch(`/post/${id}`, { method: 'DELETE' }); // usa Bearer si hay token //ablandoa
+            const r = await apiFetch(`/posts/${id}`, { method: 'DELETE' }); // actualizado
             if (r.ok) {
               try {
                 const o = JSON.parse(localStorage.getItem('post_overrides')||'{}');
@@ -304,7 +289,6 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
             alert(err?.error || 'No se pudo registrar la calificación');
             return;
           }
-          await loadRatingsFromAPI();
           await loadPosts();
         } catch (err) {
           console.error(err);
@@ -328,11 +312,10 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       fd.append('post_id', postId);
       try {
         // usa apiFetch con FormData (no fuerza Content-Type) y agrega Bearer si existe //ablandoa
-        const r = await apiFetch(`/answer`, { method:'POST', body: fd });
+        const r = await apiFetch(`/answers`, { method:'POST', body: fd });
         if(r.ok){
           input.value='';
           await loadAnswers();
-          await loadRatingsFromAPI();
           await loadPosts();
         } else {
           console.error(await r.json());
@@ -342,7 +325,6 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
   }
 
   await loadAnswers();
-  await loadRatingsFromAPI();
   await loadPosts();
   setupLightboxRoot();
 }
