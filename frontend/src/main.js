@@ -20,6 +20,12 @@ const routes = {
 
 const url = "http://localhost:3000";
 
+// helper minúsculo para validar formato de JWT
+function hasValidToken() {
+  const t = (localStorage.getItem("token") || "").trim();
+  return t && t.split(".").length === 3;
+}
+
 function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
@@ -30,7 +36,7 @@ function setupNavigation(currentPath) {
   const activeClass = (p) => (currentPath === p ? "active" : "");
 
   if (onAppPages) {
-    if (!isAuth()) {
+    if (!isAuth() || !hasValidToken()) {
       nav.innerHTML = "";
       return;
     }
@@ -48,7 +54,7 @@ function setupNavigation(currentPath) {
     return;
   }
 
-  if (!isAuth()) {
+  if (!isAuth() || !hasValidToken()) {
     nav.innerHTML = `
       <a href="/register" class="noAuth" data-link>Register</a>
     `;
@@ -64,8 +70,8 @@ function setupNavigation(currentPath) {
 }
 
 export async function navigate(pathname) {
-  // Gate para no autenticados (solo permitimos login y register)
-  if (!isAuth() && pathname !== "/login" && pathname !== "/register") {
+  // Gate para no autenticados o token inválido (solo permitimos login y register)
+  if ((!isAuth() || !hasValidToken()) && pathname !== "/login" && pathname !== "/register") {
     pathname = "/login";
   }
 
@@ -126,7 +132,10 @@ document.body.addEventListener("click", (e) => {
     // Logout
     if (path === "/logout") {
       localStorage.setItem("Auth", "false");
+      localStorage.removeItem("token");     // limpiar token
       localStorage.removeItem("role");
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("user_name");
       navigate("/login");
       return;
     }
@@ -144,11 +153,16 @@ document.body.addEventListener("click", (e) => {
 
 // Inicialización
 window.addEventListener("DOMContentLoaded", () => {
+  // si Auth quedó en true pero no hay token válido, forzar login
+  if (localStorage.getItem("Auth") === "true" && !hasValidToken()) {
+    localStorage.setItem("Auth", "false");
+  }
+
   const path = window.location.pathname;
   if (routes[path]) {
     navigate(path);
   } else {
-    if (!isAuth()) navigate("/login");
+    if (!isAuth() || !hasValidToken()) navigate("/login");
     else navigate("/dashboard");
   }
 });

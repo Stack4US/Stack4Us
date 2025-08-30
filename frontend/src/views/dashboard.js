@@ -3,6 +3,38 @@
 // de aplicar reglas de permisos en el FRONT (no reemplaza validación backend). //ablandoa
 const API = 'http://localhost:3000'; // keep in sync with backend base URL //ablandoa
 
+// ======== AUTH HELPERS (nuevo, no rompe nada) ======== //ablandoa
+function looksLikeJWT(t) { return typeof t === 'string' && t.split('.').length === 3; } //ablandoa
+function getToken() { // devuelve null si no parece JWT //ablandoa
+  const raw = (localStorage.getItem('token') || '').trim();
+  return looksLikeJWT(raw) ? raw : null;
+} //ablandoa
+function buildAuthHeaders(body, extra = {}) { // si body es FormData, no forzar Content-Type //ablandoa
+  const token = getToken();
+  const base = (body instanceof FormData)
+    ? { ...(extra || {}) }
+    : { 'Content-Type': 'application/json', ...(extra || {}) };
+  return token ? { ...base, Authorization: `Bearer ${token}` } : base;
+} //ablandoa
+async function apiFetch(path, options = {}) { //ablandoa
+  const url = path.startsWith('http') ? path : `${API}${path}`;
+  const headers = buildAuthHeaders(options.body, options.headers);
+  const resp = await fetch(url, { ...options, headers });
+  if (resp.status === 401 || resp.status === 403) {
+    // token inválido/ausente: limpiar y mandar a login de forma amable //ablandoa
+    alert('Tu sesión expiró o el token es inválido. Inicia sesión de nuevo.');
+    localStorage.removeItem('token');
+    localStorage.setItem('Auth', 'false');
+    try {
+      const { navigate } = await import('../main');
+      navigate('/login');
+    } catch {}
+    throw new Error('Unauthorized');
+  }
+  return resp;
+} //ablandoa
+// ====================================================== //ablandoa
+
 // ===================== RATING UTILITIES (NEW) ===================== //ablandoa
 const STAR_MAX = 5; //ablandoa
 
@@ -13,12 +45,18 @@ function renderStars(answerId, avg, myRating, disabled) { //ablandoa
   const roundAvg = isFinite(avg) ? (Math.round(avg * 10) / 10).toFixed(1) : '0.0'; //ablandoa
   const cls = disabled ? 'pointer-events:none;opacity:.6' : 'cursor:pointer'; //ablandoa
   let stars = ''; //ablandoa
+
   for (let v = 1; v <= STAR_MAX; v++) { //ablandoa
     const filled = myRating ? v <= myRating : v <= Math.round(avg || 0); //ablandoa
-    stars += `<span class="star" data-answer="${answerId}" data-value="${v}" title="${v}" style="font-size:16px;line-height:1;${cls};user-select:none">${filled ? '★' : '☆'}</span>`; //ablandoa
-  } //ablandoa
+    const starClass = filled ? 'filled' : 'empty'; // Usamos la clase 'filled' o 'empty' dependiendo de la calificación
+    const starSymbol = filled ? '★' : '☆'; // Si la estrella está llena, usamos el símbolo de estrella llena, si está vacía usamos el vacío
+
+    stars += `<span class="star ${starClass}" data-answer="${answerId}" data-value="${v}" title="${v}" style="font-size:24px;line-height:1;${cls};user-select:none">${starSymbol}</span>`; //ablandoa
+  }
+
   return `<div class="rating" data-answer="${answerId}" style="display:flex;align-items:center;gap:4px">${stars}<span class="rate-avg" style="font-size:11px;color:#666;margin-left:6px">(${roundAvg})</span></div>`; //ablandoa
-} //ablandoa
+}
+
 
 function injectRatingsUI(rootEl, answersCache) { //ablandoa
   const me = Number(localStorage.getItem('user_id') || 0); //ablandoa
@@ -28,7 +66,7 @@ function injectRatingsUI(rootEl, answersCache) { //ablandoa
     const myR = myRatingsMap.get(answerId) ?? null; //ablandoa
     const aObj = answersCache.find(x => Number(x.answer_id) === answerId); //ablandoa
     const isMine = aObj ? Number(aObj.user_id) === me : false; //ablandoa
-    const disabled = isMine || myR != null; //ablandoa
+    const disabled = isMine; //ablandoa
     slot.innerHTML = `
       ${renderStars(answerId, aInfo.avg, myR, disabled)}
       <small style="display:block;text-align:right;color:#888;margin-top:2px">${aInfo.count || 0} voto(s)</small>
@@ -45,10 +83,9 @@ async function loadRatingsFromAPI() { //ablandoa
 
   // Mis calificaciones (si hay token)
   myRatingsMap.clear(); //ablandoa
-  const token = localStorage.getItem('token'); //ablandoa
-  if (token) { //ablandoa
+  if (getToken()) { //ablandoa
     try {
-      const myList = await fetch(`${API}/my-answer-ratings`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : []); //ablandoa
+      const myList = await apiFetch(`/my-answer-ratings`).then(r => r.ok ? r.json() : []); //ablandoa
       myList.forEach(r => myRatingsMap.set(Number(r.answer_id), Number(r.rating))); //ablandoa
     } catch { /* ignore */ }
   }
@@ -178,6 +215,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         if (type) fd.set('type', type);
         if (status) fd.set('status', status);
 
+        // insert-post NO requiere auth en backend, pero dejamos como estaba //ablandoa
         const r = await fetch(`${API}/insert-post`, { method: 'POST', body: fd });
         if (!r.ok) {
           let msg = 'Error al crear el post.';
@@ -210,19 +248,19 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         const id = btn.dataset.id;
         if (btn.classList.contains('btn-delete')) { // eliminar post
           if (!confirm('Eliminar post?')) return;
-          const token = localStorage.getItem('token');
-          if (!token) { alert('Sesión expirada. Reloguea.'); return; }
-          const r = await fetch(`${API}/post/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-          if (r.ok) {
-            try {
-              const o = JSON.parse(localStorage.getItem('post_overrides')||'{}');
-              delete o[id];
-              localStorage.setItem('post_overrides', JSON.stringify(o));
-            } catch {}
-            await loadPosts();
-          } else {
-            try { const err=await r.json(); console.error(err); alert(err.error||'Error eliminando'); } catch(_) {}
-          }
+          try {
+            const r = await apiFetch(`/post/${id}`, { method: 'DELETE' }); // usa Bearer si hay token //ablandoa
+            if (r.ok) {
+              try {
+                const o = JSON.parse(localStorage.getItem('post_overrides')||'{}');
+                delete o[id];
+                localStorage.setItem('post_overrides', JSON.stringify(o));
+              } catch {}
+              await loadPosts();
+            } else {
+              try { const err=await r.json(); console.error(err); alert(err.error||'Error eliminando'); } catch(_) {}
+            }
+          } catch (err) { console.error(err); }
         }
         if (btn.classList.contains('btn-edit')) { // ir a edición
           const article = btn.closest('article');
@@ -246,9 +284,9 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       if (star) {
         const answerId = Number(star.dataset.answer);
         const value = Number(star.dataset.value);
-        const token = localStorage.getItem('token');
+        const tokenExists = !!getToken(); //ablandoa
         const me = Number(localStorage.getItem('user_id') || 0);
-        if (!token) { alert('Sesión expirada. Reloguea.'); return; }
+        if (!tokenExists) { alert('Sesión expirada. Reloguea.'); return; }
 
         const aObj = answersCache.find(x => Number(x.answer_id) === answerId);
         if (!aObj) return;
@@ -257,11 +295,10 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
         if (!(value >= 1 && value <= STAR_MAX)) return;
 
         try {
-          const r = await fetch(`${API}/answers/${answerId}/rate`, {
+          const r = await apiFetch(`/answers/${answerId}/rate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ rating: value })
-          });
+          }); // usa Bearer + maneja 401/403 //ablandoa
           if (!r.ok) {
             const err = await r.json().catch(()=> ({}));
             alert(err?.error || 'No se pudo registrar la calificación');
@@ -271,7 +308,7 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
           await loadPosts();
         } catch (err) {
           console.error(err);
-          alert('Error de red al calificar');
+          // apiFetch ya alerta en 401/403 //ablandoa
         }
       }
     });
@@ -290,8 +327,8 @@ export async function renderDashboardAfterTemplateLoaded() { // punto de entrada
       fd.append('user_id', localStorage.getItem('user_id'));
       fd.append('post_id', postId);
       try {
-        const token = localStorage.getItem('token');
-        const r = await fetch(`${API}/answer`, { method:'POST', headers: token? { 'Authorization': `Bearer ${token}` } : {}, body: fd });
+        // usa apiFetch con FormData (no fuerza Content-Type) y agrega Bearer si existe //ablandoa
+        const r = await apiFetch(`/answer`, { method:'POST', body: fd });
         if(r.ok){
           input.value='';
           await loadAnswers();

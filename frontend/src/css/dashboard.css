@@ -138,3 +138,19 @@ body.lightbox-open { overflow: hidden; }
 /* Utilities */
 .hidden { display:none !important; }
 .hint { font-size:11px; color:var(--c-muted); }
+
+/* Estilo para las estrellas */
+.star {
+  font-size: 24px; /* Aumenta el tamaño de las estrellas */
+  transition: color 0.2s ease; /* Para suavizar la transición al cambiar de color */
+}
+
+/* Estrellas activas (cuando el usuario las califica) */
+.star.filled {
+  color: #9b59b6; /* Morado para las estrellas llenas */
+}
+
+/* Estrellas vacías (cuando aún no están calificadas) */
+.star.empty {
+  color: white; /* Blanco para las estrellas vacías */
+}
