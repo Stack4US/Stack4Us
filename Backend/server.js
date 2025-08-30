@@ -27,23 +27,28 @@ function generateToken(user) {
     return null;
   }
 }
-
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  const parts = String(authHeader).trim().split(' ');
+  const token = parts.length === 2 && /^Bearer$/i.test(parts[0]) ? parts[1].trim() : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' })
-  };
+    return res.status(401).json({ error: 'Access token required' });
+  }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET); //ablandoa
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid token' });
   }
 }
+
 
 // ========================= REGISTER =========================
 app.post('/register', async (req, res) => {
@@ -88,8 +93,13 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
-    let token = generateToken(user);
-    const payload = {
+    const token = generateToken(user);
+    if (!token || token.split('.').length !== 3) {
+      // Si por algún motivo no se pudo firmar, NO mandamos fallback
+      return res.status(500).json({ error: 'Token generation failed' });
+    }
+
+    return res.status(200).json({
       message: 'Login successful',
       user: {
         id: user.user_id,
@@ -97,15 +107,15 @@ app.post('/login', async (req, res) => {
         user_name: user.user_name,
         email: user.email,
         rol_id: user.rol_id
-      }
-    };
-    payload.token = token || 'fallback-token'; // siempre enviar un token para el frontend
-    res.status(200).json(payload);
+      },
+      token
+    });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // ======================== ENDPOINTS FOR USERS ========================
 
@@ -274,28 +284,32 @@ app.put('/owns-posts/:post_id', authenticateToken, upload.single("image"), async
 app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
   const answer_id = parseInt(req.params.answer_id, 10);
   const user_id = req.user.user_id;
-  const { rating } = req.body;
+  const ratingRaw = req.body?.rating;
+
+  // validar rating
+  const rating = parseInt(ratingRaw, 10);
+  if (!Number.isInteger(answer_id) || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'Invalid rating. It must be an integer between 1 and 5.' });
+  }
 
   try {
     const answerResult = await pool.query(
-      'SELECT * FROM answer WHERE answer_id = $1',
+      'SELECT user_id FROM answer WHERE answer_id = $1',
       [answer_id]
     );
     if (answerResult.rows.length === 0) {
       return res.status(404).json({ error: 'Answer dont found' });
     }
 
-    const answer = answerResult.rows[0];
-
-    if (answer.user_id === user_id) {
+    const answerOwnerId = answerResult.rows[0].user_id;
+    if (answerOwnerId === user_id) {
       return res.status(403).json({ error: 'You cant rating your own answer' });
     }
 
     const existingRating = await pool.query(
-      'SELECT * FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
+      'SELECT 1 FROM answer_ratings WHERE answer_id = $1 AND user_id = $2',
       [answer_id, user_id]
     );
-
     if (existingRating.rows.length > 0) {
       return res.status(400).json({ error: 'This answer is already rating' });
     }
@@ -305,13 +319,13 @@ app.post('/answers/:answer_id/rate', authenticateToken, async (req, res) => {
       [answer_id, user_id, rating]
     );
 
-    res.status(201).json({ message: 'Rating register succesfully' });
-
+    return res.status(201).json({ message: 'Rating register succesfully' });
   } catch (error) {
     console.error('Error rating answer:', error);
-    res.status(500).json({ error: 'Error in server' });
+    return res.status(500).json({ error: 'Error in server' });
   }
 });
+
 
 // =================== GET ALL ANSWERS OF USER ==================
 app.get('/users/:userId/answers', async (req, res) => {
@@ -596,9 +610,6 @@ app.delete('/owns-conversation/:conversation_id', authenticateToken, async (req,
   }
 });
 
-// ======================== NOTIFICATIONS  ========================
-
-<<<<<<< HEAD
 // ======================= RATINGS & RANKING (READ ONLY) =======================
 // *** NUEVO: endpoints de lectura para promedios y ranking *** //ablandoa
 
@@ -703,7 +714,9 @@ app.get('/ranking', async (req, res) => { //ablandoa
   }
 }); //ablandoa
 
-=======
+
+// ======================== NOTIFICATIONS  ========================
+
 // ======================== GET ALL NOTIFICATIONS  ========================
 app.get("/get-all-notifications/:user_id", async (req, res) => {
   try {
@@ -731,7 +744,6 @@ app.patch("/notifications/:id", async (req, res) => {
     res.status(500).json({ error: "Error actualizando notificación" });
   }
 });
->>>>>>> e2d2ccbab59e256104e06e7b4a4318e93d0db2f0
 
 // ========================= LISTEN ============================
 app.listen(PORT, () => {
