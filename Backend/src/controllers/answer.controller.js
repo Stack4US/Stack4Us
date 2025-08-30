@@ -2,27 +2,27 @@ import * as answerService from '../services/answer.service.js';
 
 export async function listAllAnswers(req, res, next) {
     try {
-    const answers = await answerService.getAllAnswers();
-    res.status(200).json(answers);
+        const answers = await answerService.getAllAnswers();
+        res.status(200).json(answers);
 
-} catch (err) {
-    next(err);
-}
+    } catch (err) {
+        next(err);
+    }
 }   
 
 export async function insertAnswer(req, res, next) {
-  try {
+    try {
         const result = await answerService.createAnswer(req.body, req.file, req.user);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
         res.status(201).json(result);
+    
     } catch (err) {
         console.error("Error creating answer:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 }
-
 
 export async function deleteAnswer(req, res, next) {
     try {

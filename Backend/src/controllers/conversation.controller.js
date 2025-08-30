@@ -10,20 +10,16 @@ export async function listAllConversations(req, res, next) {
 }
 
 export async function insertConversation(req, res) {
-  try {
-    const { description, answer_id } = req.body;
-    const user_id = req.user.user_id;
+    try {
+        const { description, answer_id } = req.body;
+        const user_id = req.user.user_id;
+        const newConversation = await conversationService.createConversation({ description, answer_id, user_id },req.file);
 
-    const newConversation = await conversationService.createConversation(
-      { description, answer_id, user_id },
-      req.file 
-    );
-
-    res.status(201).json(newConversation);
-  } catch (err) {
-    console.error("Error inserting conversation:", err);
-    res.status(400).json({ error: err.message });
-  }
+        res.status(201).json(newConversation);
+    } catch (err) {
+        console.error("Error inserting conversation:", err);
+        res.status(400).json({ error: err.message });
+    }
 }
 
 export async function deleteConversation(req, res, next) {
@@ -43,7 +39,6 @@ export async function deleteConversation(req, res, next) {
         next(err);
     }
 }
-
 
 export async function getUserConversations(req, res, next) {
     try {
