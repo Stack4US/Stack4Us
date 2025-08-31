@@ -6,7 +6,7 @@ async function j(u, o) {
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
-
+// 
 function row(i, u) {
   const displayName = u.user_name || 'Usuario';
   const avg = (u.avg_rating!=null)? (Math.round(u.avg_rating*10)/10).toFixed(1) : '-';
