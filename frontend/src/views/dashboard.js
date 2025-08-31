@@ -2,7 +2,7 @@
 // Administra carga de posts, answers y conversaciones (replies a answers)
 // Validaciones reales van en el backend.
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://stack4us.up.railway.app';
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 let RATINGS_ENABLED = true; // se ajustará tras detección
 let USE_API_PREFIX = false;
@@ -30,13 +30,16 @@ function buildEndpoints(){
 let ENDPOINTS = buildEndpoints();
 
 async function detectBackendStyle(){
-  // Detect /api mode
   let apiMode=false;
-  try{ const r=await fetch(`${API_BASE}/api/answers`); if(r.ok) apiMode=true; }catch{}
+  // For production domains force /api
+  if(/railway\.app$/i.test(new URL(API_BASE).host)) {
+    apiMode=true;
+  } else {
+    try{ const r=await fetch(`${API_BASE}/api/answers`, {method:'GET'}); if(r.ok || r.status===401 || r.status===403){ apiMode=true; } }catch{}
+  }
   USE_API_PREFIX = apiMode;
   ENDPOINTS = buildEndpoints();
   if(!apiMode){
-    // legacy naming differences solo para posts/answers/conversations/users
     ENDPOINTS.listPosts = '/all-posts';
     ENDPOINTS.createPost = '/insert-post';
     ENDPOINTS.deletePost = id => `/post/${id}`;
@@ -194,11 +197,35 @@ export async function renderDashboardAfterTemplateLoaded(){
         if(Number(aObj.user_id)===Number(localStorage.getItem('user_id'))) return alert('No puedes calificar tu propia respuesta');
         if(myRatingsMap.has(answerId)) return alert('Ya calificaste');
         if(!(value>=1&&value<=STAR_MAX)) return;
-        try{ const r=await apiFetch(ENDPOINTS.rateAnswer(answerId), {method:'POST', body:JSON.stringify({answer_id:answerId, rating:value})});
-          if(!r.ok){ const err=await r.json().catch(()=>({})); return alert(err.error||'Error rating'); }
+        try{
+          const baseAttempt = ENDPOINTS.rateAnswer(answerId);
+          const attempts = [baseAttempt];
+          if(!baseAttempt.endsWith('/')) attempts.push(baseAttempt + '/');
+          attempts.push(`${USE_API_PREFIX?'/api':''}/answers/${answerId}/rate`);
+          let r, used;
+          for(const ep of attempts){
+            used = ep;
+            r = await apiFetch(ep, {method:'POST', body:JSON.stringify({answer_id:answerId, rating:value})});
+            if(r.status !== 404) break; // solo cambiar si no 404
+            console.warn('Rating endpoint 404 ->', ep);
+          }
+          if(r.status===404){
+            console.error('Ninguna ruta de rating encontrada (desactivo ratings).');
+            RATINGS_BACKEND_AVAILABLE=false;
+            return alert('Servicio de ratings no disponible.');
+          }
+          if(!r.ok){
+            let err={}; try{ err=await r.json(); }catch{}
+            console.error('Rating POST fail', r.status, err, 'endpoint usado:', used);
+            return alert(err.error||`Error rating (${r.status})`);
+          }
+          // si funcionó con fallback answers/:id/rate redefinir
+          if(used.includes('/answers/') && !used.includes('ratings')){
+            ENDPOINTS.rateAnswer = id => `${USE_API_PREFIX?'/api':''}/answers/${id}/rate`;
+          }
           await loadRatingsFromAPI();
           await loadPosts();
-        }catch(err){ console.error(err); }
+        }catch(err){ console.error('Rating network error', err); alert('Error de red al enviar rating'); }
       }
     });
   }

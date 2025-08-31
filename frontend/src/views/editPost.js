@@ -1,7 +1,7 @@
 // Edit Post view logic //ablandoa
 import { navigate } from '../main';
 
-const API = 'http://localhost:3000'; // match backend base //ablandoa
+const API = 'https://stack4us.up.railway.app'; // match backend base //ablandoa
 
 function qs(id){ return document.getElementById(id); }
 
