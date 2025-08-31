@@ -175,7 +175,9 @@ function postCard(post, answersByPost, convByAnswer){
   }).join('')}</div>` : '';
   return `<article class="card post-card">
     <h4>${post.title || ''}</h4>
-    <div class="post-meta"><span>Tipo: ${post.type||'-'}</span> · <span>Estado: ${post.status||'unsolved'}</span> · <span>Autor #${post.user_id||'-'}</span></div>
+    <div class="post-meta">
+      <span class="post-author"><img class="post-author-avatar" src="${authorAvatar}" alt="avatar" onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" /> ${authorName}</span> · <span>Tipo: ${post.type||'-'}</span> · <span>Estado: ${post.status||'unsolved'}</span>
+    </div>
     <p class="post-desc">${post.description||''}</p>
     ${imageBox}
     <div class="post-actions">
@@ -294,7 +296,7 @@ export async function renderDashboardAfterTemplateLoaded(){
   let answersCache=[];
   function groupAnswers(list){ const m=new Map(); list.forEach(a=>{ const arr=m.get(a.post_id)||[]; arr.push(a); m.set(a.post_id,arr); }); return m; }
 
-  async function loadUsers(){ try{ const r=await apiFetch(ENDPOINTS.listUsers); if(r.ok){ const data=await r.json(); usersMap=new Map(data.map(u=>[Number(u.user_id),u])); } }catch(err){ console.warn('No se pudieron cargar usuarios', err); } }
+  async function loadUsers(){ try{ const r=await apiFetch(ENDPOINTS.listUsers); if(r.ok){ const data=await r.json(); usersMap=new Map(data.map(u=>[Number(u.user_id),u])); try{ localStorage.setItem('all_users_cache', JSON.stringify(data)); const meId=Number(localStorage.getItem('user_id')); const me=data.find(u=>Number(u.user_id)===meId); if(me){ if(me.profile_image) localStorage.setItem('profile_image', me.profile_image); if(me.user_name) localStorage.setItem('user_name', me.user_name); } }catch{} } }catch(err){ console.warn('No se pudieron cargar usuarios', err); } }
   async function loadAnswers(){ answersCache = await getJSON(`${API_BASE}${ENDPOINTS.listAnswers}`); if(aEl) aEl.textContent=answersCache.length; if(pEl) pEl.textContent=String(answersCache.length*10); }
   async function loadConversations(){ try{ conversationsCache = await getJSON(`${API_BASE}${ENDPOINTS.listConversations}`);}catch{ conversationsCache=[]; } }
   async function loadPosts(){
