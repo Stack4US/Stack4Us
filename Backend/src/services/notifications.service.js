@@ -14,6 +14,26 @@ export async function getNotificationsByUserId(userId) {
   return result.rows;
 }
 
+export async function createNotification({ user_id, message }) {
+  const uid = parseInt(user_id, 10);
+  if (!uid || isNaN(uid)) {
+    throw new Error('Invalid user_id');
+  }
+
+  const finalMessage = message || 'You have a new notification';
+  const status = 'unread';
+  const date = new Date();
+
+  const result = await pool.query(
+    `INSERT INTO notifications (user_id, message, date, status) 
+     VALUES ($1, $2, $3, $4) 
+     RETURNING notification_id, user_id, message, date, status`,
+    [uid, finalMessage, date, status]
+  );
+
+  return result.rows[0];
+}
+
 export async function markAsRead(notificationId, userId) {
   const nid = parseInt(notificationId, 10);
   const uid = parseInt(userId, 10);

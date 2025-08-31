@@ -2,7 +2,7 @@ import express from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
 import {
   getAllNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
 } from '../controllers/notifications.controller.js';
 
 const router = express.Router();

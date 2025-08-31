@@ -12,7 +12,7 @@ import {
 const router = express.Router();
 
 router.get('/all', listAllPosts);
-router.post('/insert', upload.single('image'), insertPost);
+router.post('/insert', upload.single('image'), authenticateToken, insertPost);
 router.delete('/:id', authenticateToken, deletePost); // ADMIN or owner
 router.put('/owns/:post_id', authenticateToken, upload.single('image'), updateOwnPost);
 router.get('/user/:userId', getUserPosts);
@@ -24,7 +24,7 @@ rutas funcionales:
 /api/posts/all  -> GET -> listar todos los posts
 
 /api/posts/insert -> POST -> crear un post (con imagen opcional)
-recibe un objeto JSON con los parametros que quiere cambiar y la imagen en multipart/form-data
+recibe un objeto JSON con los parametros que quiere cambiar y la imagen
 
 /api/posts/:id -> DELETE -> eliminar un post (solo admin o dueño)
 recibir el token en el header Authorization y el id del post a eliminar en la URL

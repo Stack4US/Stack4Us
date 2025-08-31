@@ -1,4 +1,5 @@
 import pool from '../config/data_base_conection.js';
+import { createNotification } from '../services/notifications.service.js';
 
 export async function getAnswersRatingsSummary() {
   const sql = `
@@ -12,6 +13,7 @@ export async function getAnswersRatingsSummary() {
   return result.rows;
 }
 
+
 export async function insertRating({ user_id, answer_id, rating }) {
   const result = await pool.query(
     `INSERT INTO answer_ratings (user_id, answer_id, rating)
@@ -19,7 +21,26 @@ export async function insertRating({ user_id, answer_id, rating }) {
      RETURNING *`,
     [user_id, answer_id, rating]
   );
-  return result.rows[0];
+
+  const ratingInserted = result.rows[0];
+
+  const answerOwnerRes = await pool.query(
+    `SELECT user_id FROM answer WHERE answer_id = $1`,
+    [answer_id]
+  );
+
+  if (answerOwnerRes.rows.length > 0) {
+    const answerOwnerId = answerOwnerRes.rows[0].user_id;
+
+    if (answerOwnerId !== user_id) {
+      await createNotification({
+        user_id: answerOwnerId,
+        message: `Tu respuesta recibió una calificación de ${rating} estrellas.`
+      });
+    }
+  }
+
+  return ratingInserted;
 }
 
 export async function getMyRatings(userId) {

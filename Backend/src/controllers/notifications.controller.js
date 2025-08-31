@@ -1,5 +1,19 @@
 import * as notificationsService from '../services/notifications.service.js';
 
+export async function insertNotification(req, res, next) {
+  try {
+    const user_id = req.body.user_id;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id are required' });
+    }
+    const newNotification = await notificationsService.createNotification({ user_id });
+    res.status(201).json(newNotification);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getAllNotifications(req, res, next) {
   try {
     const userId = req.user.user_id;

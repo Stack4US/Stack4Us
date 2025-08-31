@@ -12,7 +12,7 @@ export async function listAllPosts(req, res, next) {
 
 export async function insertPost(req, res, next) {
   try {
-    const newPost = await postService.createPost(req.body, req.file);
+    const newPost = await postService.createPost(req.user.user_id, req.body, req.file);
     res.status(201).json(newPost);
   } catch (err) {
     next(err);

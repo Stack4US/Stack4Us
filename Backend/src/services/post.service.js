@@ -12,9 +12,9 @@ export async function getAllPosts() {
   return result.rows;
 }
 
-export async function createPost(body, file) {
+export async function createPost(user_id, body, file) {
   try {
-    let { type, title, description, user_id, status } = body;
+    let { type, title, description, status } = body;
     const cleanType  = String(type || '').trim().toLowerCase();
     const cleanTitle = String(title || '').trim();
     const cleanDesc  = String(description || '').trim();

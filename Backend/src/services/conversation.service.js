@@ -1,5 +1,6 @@
 import pool from '../config/data_base_conection.js';
 import { uploadImage } from './cloudinary.service.js';
+import { createNotification } from './notifications.service.js';
 
 export async function createConversation(body, file) {
     const { description, user_id, answer_id } = body;
@@ -9,20 +10,22 @@ export async function createConversation(body, file) {
     if (!description || !String(description).trim()) {
         throw new Error('Description is required to create a conversation.');
     }
-    if (!uid || isNaN(uid)) {
+    if (!Number.isInteger(uid)) {
         throw new Error('A valid user_id is required to create a conversation.');
     }
-    if (!aid || isNaN(aid)) {
+    if (!Number.isInteger(aid)) {
         throw new Error('A valid answer_id is required to create a conversation.');
     }
 
     const answerExists = await pool.query(
-        'SELECT answer_id FROM answer WHERE answer_id = $1',
+        'SELECT answer_id, user_id FROM answer WHERE answer_id = $1',
         [aid]
     );
     if (answerExists.rows.length === 0) {
         throw new Error('Answer_id does not exist.');
     }
+
+    const answerOwnerId = answerExists.rows[0].user_id;
 
     let imageUrl = null;
     if (file) {
@@ -38,8 +41,16 @@ export async function createConversation(body, file) {
          RETURNING *`,
         [String(description).trim(), uid, aid, imageUrl]
     );
+    const conversationInserted = result.rows[0];
 
-    return result.rows[0];
+    if (answerOwnerId && answerOwnerId !== uid) {
+        await createNotification({
+            user_id: answerOwnerId,
+            message: `New conversation started regarding your answer (ID: ${aid})`
+        });
+    }
+    
+    return conversationInserted;
 }
 
 export async function getAllConversation() {

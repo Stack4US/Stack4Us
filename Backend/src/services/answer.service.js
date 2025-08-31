@@ -1,5 +1,6 @@
 import pool from '../config/data_base_conection.js';
 import { uploadImage } from './cloudinary.service.js';
+import { createNotification } from './notifications.service.js';
 
 export async function getAllAnswers() {
     try {
@@ -12,24 +13,26 @@ export async function getAllAnswers() {
     }
 }
 
-export async function createAnswer(body, file, user) {
+export async function createAnswer(body, file, user_id) {
     try {
         const { post_id, description } = body;
+        console.log('BODY:', body); 
         const cleanDesc = String(description || '').trim();
         const pid = parseInt(post_id, 10);
-        const uid = parseInt(user.user_id, 10);
+        const uid = parseInt(user_id, 10);
 
         if (!cleanDesc) throw new Error('Description is required.');
         if (!Number.isInteger(pid)) throw new Error('Invalid post_id.');
         if (!Number.isInteger(uid)) throw new Error('Invalid authenticated user_id.');
 
         const postExists = await pool.query(
-            'SELECT post_id FROM post WHERE post_id = $1',
+            'SELECT post_id, user_id FROM post WHERE post_id = $1',
             [pid]
         );
         if (postExists.rows.length === 0) {
             throw new Error('Post does not exist.');
         }
+        const postOwnerId = postExists.rows[0].user_id;
 
         let imageUrl = null;
         if (file) {
@@ -45,8 +48,19 @@ export async function createAnswer(body, file, user) {
              RETURNING *`,
             [pid, cleanDesc, uid, imageUrl]
         );
-        return answerIns.rows[0];
+        const newAnswer = answerIns.rows[0];
+
+        // notificación al dueño del post (si no es el mismo user)
+        if (postOwnerId !== uid) {
+            await createNotification({ 
+                user_id: postOwnerId,
+                message: `New answer to your post (ID: ${pid})`
+            });
+        }
+
+        return newAnswer;
     } catch (err) {
+        console.error('[CREATE-ANSWER] Error:', err);
         return { error: err.message };
     }
 }

@@ -12,7 +12,7 @@ export async function listAllAnswers(req, res, next) {
 
 export async function insertAnswer(req, res, next) {
     try {
-        const result = await answerService.createAnswer(req.body, req.file, req.user);
+        const result = await answerService.createAnswer(req.body, req.file, req.user.user_id);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
