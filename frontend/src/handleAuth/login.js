@@ -34,7 +34,7 @@ function login(url) {
       // prevent double submit //ablandoa
       if (submitBtn) submitBtn.disabled = true;             //ablandoa
 
-      const resp = await axios.post(`${url}/login`, userData); // peticion login //ablandoa
+      const resp = await axios.post(`${url}/login`, userData); // url ya incluye /api/users
       console.debug('[login] raw resp.data', resp.data);        // debug //ablandoa
 
       loged = resp.status === 200 || resp.status === 201;

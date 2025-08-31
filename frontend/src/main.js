@@ -18,7 +18,7 @@ const routes = {
   "/login": "./src/templates/auth/login.html",
 };
 
-const url = "http://localhost:3000";
+const url = "http://localhost:3000/api/users"; // base solo para auth (login/register)
 
 // helper minúsculo para validar formato de JWT
 function hasValidToken() {
