@@ -2,7 +2,7 @@
 // Administra carga de posts, answers y conversaciones (replies a answers)
 // Validaciones reales van en el backend.
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://stack4us.up.railway.app';
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 let RATINGS_ENABLED = true; // se ajustará tras detección
 let USE_API_PREFIX = false;
@@ -36,13 +36,16 @@ function buildEndpoints(){
 let ENDPOINTS = buildEndpoints();
 
 async function detectBackendStyle(){
-  // Detect /api mode
   let apiMode=false;
-  try{ const r=await fetch(`${API_BASE}/api/answers`); if(r.ok) apiMode=true; }catch{}
+  // For production domains force /api
+  if(/railway\.app$/i.test(new URL(API_BASE).host)) {
+    apiMode=true;
+  } else {
+    try{ const r=await fetch(`${API_BASE}/api/answers`, {method:'GET'}); if(r.ok || r.status===401 || r.status===403){ apiMode=true; } }catch{}
+  }
   USE_API_PREFIX = apiMode;
   ENDPOINTS = buildEndpoints();
   if(!apiMode){
-    // legacy naming differences solo para posts/answers/conversations/users
     ENDPOINTS.listPosts = '/all-posts';
     ENDPOINTS.createPost = '/insert-post';
     ENDPOINTS.deletePost = id => `/post/${id}`;
@@ -524,7 +527,7 @@ export async function renderDashboardAfterTemplateLoaded(){
           if(!r.ok){ const err=await r.json().catch(()=>({})); return alert(err.error||'Error rating'); }
           await loadRatingsFromAPI();
           await loadPosts();
-        }catch(err){ console.error(err); }
+        }catch(err){ console.error('Rating network error', err); alert('Error de red al enviar rating'); }
       }
     });
   }

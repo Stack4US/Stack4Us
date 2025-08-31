@@ -19,7 +19,16 @@
 
   <div class="dashboard-main">
     <div class="dashboard-container">
-      <h1>Dashboard - Stack4Us</h1>
+      <div class="dash-head-with-bell">
+        <h1>Dashboard - Stack4Us</h1>
+        <div class="dash-head-actions">
+          <button id="bellBtn" class="bell-btn" aria-label="Notificaciones" title="Notificaciones">
+            <img id="bellIconImg" src="/src/assets/img/mdi_bell.png" alt="bell" width="24" height="24" />
+            <span id="bellBadge" class="bell-badge hidden"></span>
+          </button>
+          <div id="notifPopover" class="notif-popover hidden" role="dialog" aria-label="Notificaciones"></div>
+        </div>
+      </div>
 
       <div class="dashboard-content">
         <!-- Stats cards -->

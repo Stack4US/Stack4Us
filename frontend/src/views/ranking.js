@@ -1,4 +1,4 @@
-const API = 'http://localhost:3000/api';
+const API = 'https://stack4us.up.railway.app/api';
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 
 async function j(u, o) {
@@ -14,7 +14,7 @@ function row(i, u) {
   const answers = u.answers_with_votes != null ? u.answers_with_votes : (u.answers_count||0);
   return `
     <div class="card" style="display:flex;align-items:center;gap:12px;padding:10px;margin:6px 0">
-      <div style="width:26px;text-align:center;font-weight:700">${i}</div>
+      <div style="width:26px;text-align:center;font-weight:700;color:#BFBB3D">${i}</div>
       <img src="${u.profile_image||DEFAULT_AVATAR}" alt="avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover" onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" />
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${displayName}</div>

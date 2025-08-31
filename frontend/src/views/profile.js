@@ -19,7 +19,7 @@ export async function renderProfileAfterTemplateLoaded(){
   const btnCancel = document.getElementById('btnCancelDesc');
   const hint = document.getElementById('descHint');
 
-  const API = 'http://localhost:3000';
+  const API = 'https://stack4us.up.railway.app';
 
   // Basic user info
   const user_name = localStorage.getItem('user_name') || 'User';
