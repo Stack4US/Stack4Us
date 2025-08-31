@@ -33,14 +33,26 @@ export async function renderProfileAfterTemplateLoaded(){
   let storedProfile = {};
   try { storedProfile = JSON.parse(localStorage.getItem('user_profile')||'{}'); } catch{}
 
+  function hydrateFromCache(){
+    if(storedProfile.profile_image && storedProfile.user_name) return; // already have
+    try{
+      const cache = JSON.parse(localStorage.getItem('all_users_cache')||'[]');
+      const me = cache.find(u=> String(u.user_id)===String(user_id));
+      if(me){ storedProfile = { ...me, ...storedProfile }; localStorage.setItem('user_profile', JSON.stringify(storedProfile)); }
+    }catch{}
+  }
+  hydrateFromCache();
+
   function paint(){
     nameEl.textContent = storedProfile.user_name || user_name;
     roleEl.textContent = role;
     emailEl.textContent = storedProfile.email || email;
     descEl.textContent = storedProfile.description || 'No description set.';
     const img = storedProfile.profile_image || localStorage.getItem('profile_image');
+    const fallback = '/src/assets/img/qlementine-icons_user-16.png';
     if (img) { avatarEl.src = img; avatarEl.style.display='block'; }
-    else { avatarEl.style.display='none'; }
+    else { avatarEl.src = fallback; avatarEl.style.display='block'; }
+    avatarEl.onerror = () => { avatarEl.onerror=null; avatarEl.src=fallback; };
   }
   paint();
 
