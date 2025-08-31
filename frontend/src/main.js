@@ -2,14 +2,14 @@
 import isAuth from "./handleAuth/isAuth";
 import register from "./handleAuth/register";
 import login from "./handleAuth/login";
-import { renderDashboardAfterTemplateLoaded } from "./views/dashboard"; // ablandoa
+import { renderDashboardAfterTemplateLoaded } from "./views/dashboard";
 
-// Rutas
+// Rutas (SPA)
 const routes = {
   "/dashboard": "./src/templates/dashboard.html",
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
-  "/about": "./src/templates/about.html",
+  // "/about": "./src/templates/about.html",   // <-- BORRADO: About queda como página estática pública
   "/edit-post": "./src/templates/edit-post.html",
   "/profile": "./src/templates/profile.html",
 
@@ -30,22 +30,29 @@ function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
 
-  const appPages = ["/dashboard", "/ranking", "/about"];
+  // Páginas "app" dentro de la SPA (sin About)
+  const appPages = ["/dashboard", "/ranking"];
   const onAppPages = appPages.includes(currentPath);
   const isMobile = window.innerWidth < 1000;
   const activeClass = (p) => (currentPath === p ? "active" : "");
 
+  // Estando en páginas de la app (dashboard/ranking)
   if (onAppPages) {
+    // Si no hay sesión o token inválido, mostramos Register + About (estático) y salimos
     if (!isAuth() || !hasValidToken()) {
-      nav.innerHTML = "";
+      nav.innerHTML = `
+        <a href="/about.html" class="noAuth">About</a>
+        <a href="/register" class="noAuth" data-link>Register</a>
+        <a href="/login" class="noAuth" data-link>Login</a>
+      `;
       return;
     }
-    // En PC mostrar solo Logout; en móvil todos los enlaces
+
+    // Autenticado: en móvil mostramos navegación completa; en desktop solo Logout
     if (isMobile) {
       nav.innerHTML = `
         <a href="/dashboard" data-link class="${activeClass("/dashboard")}">Comentarios</a>
         <a href="/ranking" data-link class="${activeClass("/ranking")}">Ranking</a>
-        <a href="/about" data-link class="${activeClass("/about")}">About Us</a>
         <a href="/logout" data-link id="close-sesion">Logout</a>
       `;
     } else {
@@ -54,17 +61,21 @@ function setupNavigation(currentPath) {
     return;
   }
 
+  // Fuera de páginas app (por ejemplo /login o /register)
   if (!isAuth() || !hasValidToken()) {
+    // IMPORTANTE: About apunta a /about.html y SIN data-link para que no lo intercepte el router
     nav.innerHTML = `
+    <a href="/about.html" class="noAuth">About</a>
       <a href="/register" class="noAuth" data-link>Register</a>
+      <a href="/login" class="noAuth" data-link>Login</a>
     `;
     return;
   }
 
+  // Autenticado en otras rutas públicas (si las hubiera)
   nav.innerHTML = `
     <a href="/dashboard" data-link>Dashboard</a>
     <a href="/ranking" data-link>Ranking</a>
-    <a href="/about" data-link>About Us</a>
     <a href="/logout" data-link id="close-sesion">Logout</a>
   `;
 }
@@ -80,8 +91,8 @@ export async function navigate(pathname) {
   document.getElementById("content").innerHTML = html;
   history.pushState({}, "", pathname);
 
-  // Sidebar/layout fijo (ahora también para /about)
-  if (pathname === "/dashboard" || pathname === "/ranking" || pathname === "/about") {
+  // Sidebar/layout fijo (SÓLO en dashboard y ranking)
+  if (pathname === "/dashboard" || pathname === "/ranking") {
     document.body.classList.add("has-dashboard");
   } else {
     document.body.classList.remove("has-dashboard");
@@ -90,7 +101,7 @@ export async function navigate(pathname) {
   if (pathname === "/login") login(url);
   if (pathname === "/register") register(url);
 
-  // DASHBOARD: carga CSS (solo 1 vez) + render
+  // DASHBOARD
   if (pathname === "/dashboard") {
     if (!document.querySelector('link[data-dashboard-css]')) {
       const l = document.createElement('link');
@@ -132,7 +143,7 @@ document.body.addEventListener("click", (e) => {
     // Logout
     if (path === "/logout") {
       localStorage.setItem("Auth", "false");
-      localStorage.removeItem("token");     // limpiar token
+      localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("user_id");
       localStorage.removeItem("user_name");

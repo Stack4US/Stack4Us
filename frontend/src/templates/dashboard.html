@@ -7,7 +7,8 @@
         <a class="side-item" data-link href="/about">About Us</a>
       </nav>
     </div>
-  <div class="user-card" id="sidebarUserCard" tabindex="0" role="button" aria-label="Open profile">
+
+    <div class="user-card" id="sidebarUserCard" tabindex="0" role="button" aria-label="Open profile">
       <div class="avatar" id="sidebarAvatar">👤</div>
       <div class="user-meta">
         <span class="user-name" id="navUserName">User</span>
@@ -15,6 +16,7 @@
       </div>
     </div>
   </aside>
+
   <div class="dashboard-main">
     <div class="dashboard-container">
       <h1>Dashboard - Stack4Us</h1>
@@ -73,5 +75,61 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- FAB: Stack4Us Finder -->
+<button id="soFab"
+        class="fab fab-so"
+        aria-label="Open Stack Overflow Finder"
+        title="Stack Overflow Finder">
+  <img src="/src/assets/img/stack4us.png" alt="Stack4Us" />
+</button>
+
+<!-- MODAL: Stack Overflow Finder -->
+<div id="soModal" class="so-modal-backdrop" aria-hidden="true">
+  <div class="so-modal-card" role="dialog" aria-modal="true" aria-labelledby="soModalTitle">
+    <button class="so-modal-close" data-close="so" aria-label="Close">×</button>
+    <h3 id="soModalTitle" class="so-modal-title">Stack Overflow Finder</h3>
+
+    <!-- Finder -->
+    <section id="so-section" class="card so-finder">
+      <form id="so-form" class="so-form">
+        <input id="so-q" type="text" placeholder="Search text (error message, keywords)"/>
+        <input id="so-tags" type="text" placeholder="Tags (reactjs;javascript)"/>
+        <div class="so-toolbar">
+          <label class="so-chip">
+            <input type="checkbox" id="so-hot" checked />
+            <span>Hot</span>
+          </label>
+          <label class="so-chip">
+            <input type="checkbox" id="so-newest" />
+            <span>Newest</span>
+          </label>
+
+          <div class="so-limit">
+            <span>Limit</span>
+            <select id="so-pagesize">
+              <option>5</option>
+              <option>10</option>
+              <option>15</option>
+            </select>
+          </div>
+
+          <button id="so-search" type="submit" class="btn btn-primary">Search</button>
+        </div>
+      </form>
+
+      <div class="so-meta">
+        <span id="so-count" class="so-count">0 result(s)</span>
+      </div>
+
+      <div id="so-results" class="so-results"></div>
+
+      <footer class="so-powered">
+        Powered by the public Stack Exchange API. Links open in a new tab.
+      </footer>
+    </section>
+    <!-- /Finder -->
   </div>
 </div>

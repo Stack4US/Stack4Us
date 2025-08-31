@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About · Stack4Us</title>
+
+    <!-- Reuse your existing styles -->
+    <link rel="stylesheet" href="/src/css/navbar.css">
+    <link rel="stylesheet" href="/src/css/footer.css">
+
+    <!-- Page-only styles -->
+    <link rel="stylesheet" href="/about.css">
+  </head>
+  <body>
+    <!-- ===== Header (same as login/register) ===== -->
+    <header>
+      <nav class="app-nav">
+        <div class="brand">
+          <img src="/src/assets/img/eos-icons_machine-learning (1).png" alt="Stack4Us logo">
+          <h1>Stack4Us</h1>
+        </div>
+        <div class="divider"></div>
+        <ul class="nav-actions" id="navUl">
+          <li><a class="active" href="/about.html">About</a></li>
+          <li><a href="/register">Register</a></li>
+          <li><a href="/login">Login</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- ===== Content ===== -->
+    <main class="about-shell">
+      <section class="about-hero">
+        <h1>About Stack4Us</h1>
+        <p class="subtitle">
+          A focused space to post issues, learn from peers, and keep docs short and useful.
+        </p>
+      </section>
+
+      <!-- ===== Carousel ===== -->
+      <section class="carousel-container">
+        <!-- Arrows -->
+        <button class="carousel-arrow prev" aria-label="Previous slide">‹</button>
+        <button class="carousel-arrow next" aria-label="Next slide">›</button>
+
+        <!-- Track -->
+        <div class="carousel-track" id="aboutTrack">
+          <!-- Card 1 -->
+          <article class="card">
+            <h2>Purpose</h2>
+            <p>
+              Provide a space where developers can post code issues, discuss solutions,
+              and view documentation without leaving the platform.
+            </p>
+          </article>
+
+          <!-- Card 2 -->
+          <article class="card">
+            <h2>Differential Value</h2>
+            <ul>
+              <li>Less dependence on AI, more <em>peer learning</em>.</li>
+              <li>Concise docs — no endless manuals.</li>
+              <li>Better communication between clans at Riwi.</li>
+              <li>Tools for Team Leaders to guide clearly.</li>
+            </ul>
+          </article>
+
+          <!-- Card 3 -->
+          <article class="card">
+            <h2>Roles</h2>
+            <div class="mini-grid">
+              <div class="mini-card">
+                <h3>Coder</h3>
+                <p>Post problems, reply, and rate solutions.</p>
+              </div>
+              <div class="mini-card">
+                <h3>Team Leader</h3>
+                <p>Verify answers, tag, prioritize, and provide pedagogical guidance.</p>
+              </div>
+              <div class="mini-card">
+                <h3>Admin</h3>
+                <p>Moderate content, manage users, and oversee reports.</p>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 4 -->
+          <article class="card">
+            <h2>Use Case — Post and Resolve a Problem</h2>
+            <h3>Actors</h3>
+            <ul>
+              <li><strong>Primary:</strong> Coder</li>
+              <li><strong>Secondary:</strong> Team Leader, Community</li>
+            </ul>
+            <h3>Main Flow</h3>
+            <ol>
+              <li>The coder creates a post describing the problem.</li>
+              <li>Team Leaders and coders reply with suggestions.</li>
+              <li>The author marks the best answer.</li>
+              <li>The system updates ranking and sends notifications.</li>
+            </ol>
+          </article>
+
+          <!-- Card 5 -->
+          <article class="card">
+            <h2>Features</h2>
+            <ul>
+              <li>Code editor with quick feedback.</li>
+              <li>Community-driven Q&amp;A.</li>
+              <li>Tag-based filtering.</li>
+              <li>Multi-language support.</li>
+            </ul>
+          </article>
+
+          <!-- Card 6 -->
+          <article class="card">
+            <h2>Future Vision</h2>
+            <p>
+              We aim to scale Stack4Us into a global hub with AI-assisted moderation,
+              cross-school collaboration, and learning analytics.
+            </p>
+          </article>
+        </div>
+
+        <!-- Dots -->
+        <div class="carousel-dots" id="aboutDots" aria-label="Carousel pagination"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>All rights reserved | © 2025 Stack4Us | <a href="https://github.com/Stack4Us">Github</a></p>
+    </footer>
+
+    <!-- ===== Carousel script (autoplay + arrows + dots) ===== -->
+    <script>
+      (function () {
+        const track = document.getElementById('aboutTrack');
+        const dotsWrap = document.getElementById('aboutDots');
+        const prevBtn = document.querySelector('.carousel-arrow.prev');
+        const nextBtn = document.querySelector('.carousel-arrow.next');
+        if (!track || !dotsWrap || !prevBtn || !nextBtn) return;
+
+        const cards = [...track.querySelectorAll('.card')];
+        if (!cards.length) return;
+
+        // center position for a given index
+        const positionFor = (idx) => {
+          const card = cards[idx];
+          const padLeft = parseInt(getComputedStyle(track).paddingLeft || 0);
+          const center = card.offsetLeft - padLeft - (track.clientWidth - card.clientWidth) / 2;
+          return Math.max(0, center);
+        };
+
+        // build dots
+        dotsWrap.innerHTML = cards.map((_, i) => `<button aria-label="Go to slide ${i+1}"></button>`).join('');
+        const dots = [...dotsWrap.querySelectorAll('button')];
+
+        let index = 0;
+        let timer = null;
+        const INTERVAL = 3000;
+
+        const setActiveDot = (i) => dots.forEach((d, k) => d.classList.toggle('active', k === i));
+        const goTo = (i) => {
+          index = (i + cards.length) % cards.length;
+          track.scrollTo({ left: positionFor(index), behavior: 'smooth' });
+          setActiveDot(index);
+        };
+        const next = () => goTo(index + 1);
+        const prev = () => goTo(index - 1);
+
+        const start = () => { if (!timer) timer = setInterval(next, INTERVAL); };
+        const stop  = () => { clearInterval(timer); timer = null; };
+
+        nextBtn.addEventListener('click', () => { stop(); next(); start(); });
+        prevBtn.addEventListener('click', () => { stop(); prev(); start(); });
+        dots.forEach((dot, i) => dot.addEventListener('click', () => { stop(); goTo(i); start(); }));
+
+        // snap to nearest on manual scroll
+        let scrollDebounce;
+        track.addEventListener('scroll', () => {
+          clearTimeout(scrollDebounce);
+          scrollDebounce = setTimeout(() => {
+            const mid = track.scrollLeft + track.clientWidth / 2;
+            const nearest = cards.reduce((best, el, i) => {
+              const center = el.offsetLeft + el.clientWidth / 2;
+              const dist = Math.abs(center - mid);
+              return dist < best.dist ? { i, dist } : best;
+            }, { i: index, dist: Infinity }).i;
+            index = nearest;
+            setActiveDot(index);
+          }, 120);
+        }, { passive: true });
+
+        // pause on hover/hidden tab
+        track.addEventListener('mouseenter', stop);
+        track.addEventListener('mouseleave', start);
+        document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+        window.addEventListener('resize', () => goTo(index));
+
+        // init
+        setActiveDot(0);
+        goTo(0);
+        start();
+      })();
+    </script>
+  </body>
+</html>

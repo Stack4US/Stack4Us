@@ -1,0 +1,142 @@
+:root{
+  --bg: #f7f7fc;
+  --brand-light: #e9e6ff;   /* solid light purple */
+  --brand: #6c63ff;
+  --brand-dark: #4a3fb5;
+  --text: #1c2140;
+  --muted: #606b86;
+  --radius: 18px;
+  --shadow: 0 6px 20px rgba(108,99,255,.12);
+  --shadow-hover: 0 14px 28px rgba(108,99,255,.22);
+}
+
+html, body { height: 100%; }
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* ===== Hero ===== */
+.about-shell{ max-width: 1280px; margin: 0 auto; padding: 24px 20px 80px; }
+.about-hero{ text-align:center; padding: 28px 0 16px; }
+.about-hero h1{
+  margin:0 0 6px;
+  font-size: clamp(28px,3.6vw,42px);
+  font-weight:800;
+  color:var(--brand-dark);
+}
+.about-hero .subtitle{
+  margin:0 auto; max-width:840px;
+  color:var(--muted); font-size:1.08rem;
+}
+
+/* ===== Carousel ===== */
+.carousel-container{
+  position: relative;
+  margin-top: 26px;
+  padding-inline: clamp(12px, 6vw, 64px); /* more side room to see full cards */
+}
+
+.carousel-track{
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scroll-padding-inline: 10px;
+  padding-block: 6px 14px;
+
+  /* hide scrollbar */
+  scrollbar-width: none;           /* Firefox */
+}
+.carousel-track::-webkit-scrollbar{ display: none; } /* WebKit */
+
+/* Cards */
+.card{
+  flex: 0 0 clamp(320px, 33vw, 420px);
+  min-height: 300px;
+  border-radius: var(--radius);
+  padding: 22px;
+  background: var(--brand-light);   /* no gradient */
+  border: 1px solid rgba(108,99,255,.24);
+  box-shadow: var(--shadow);
+  scroll-snap-align: center;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.card:hover{ transform: translateY(-8px); box-shadow: var(--shadow-hover); }
+
+.card h2{ margin:0 0 12px; font-size:20px; font-weight:700; color:var(--brand-dark); }
+.card h3{ margin:14px 0 6px; font-size:16px; font-weight:600; color:var(--brand); }
+.card p, .card li{ color:var(--text); line-height:1.45; }
+.card ul, .card ol{ margin:10px 0 0 18px; padding:0; }
+
+/* Mini cards inside Roles */
+.mini-grid{ display:flex; gap:10px; flex-wrap:wrap; }
+.mini-card{
+  flex:1 1 110px;
+  background:#f4f2ff;
+  border:1px solid rgba(108,99,255,.25);
+  border-radius:14px;
+  padding:12px;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.mini-card:hover{ transform: translateY(-6px); box-shadow: var(--shadow-hover); }
+.mini-card h3{ color:var(--brand); margin-bottom:6px; }
+
+/* Arrows */
+.carousel-arrow{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(108,99,255,.35);
+  background: #fff;
+  color: var(--brand-dark);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  display: grid; place-items: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  z-index: 2;
+}
+.carousel-arrow:hover{
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+  background: #fdfcff;
+}
+.carousel-arrow.prev{ left: clamp(8px, 3vw, 24px); }
+.carousel-arrow.next{ right: clamp(8px, 3vw, 24px); }
+
+/* Dots */
+.carousel-dots{
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.carousel-dots button{
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: #cfc9ff;
+  cursor: pointer;
+  transition: width .2s ease, background .2s ease, transform .2s ease;
+}
+.carousel-dots button.active{
+  width: 26px;
+  background: var(--brand);
+}
+.carousel-dots button:hover{ transform: scale(1.08); }
+
+/* Responsive */
+@media (max-width: 980px){
+  .card{ flex-basis: clamp(320px, 70vw, 520px); }
+}
+@media (max-width: 640px){
+  .carousel-container{ padding-inline: 16px; }
+  .card{ flex-basis: 86vw; min-height: 280px; }
+}
