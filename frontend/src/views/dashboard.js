@@ -70,6 +70,14 @@ async function detectRatingsEndpoints(){
 }
 
 // ============ AUTH HELPERS ============
+// helpers chicos para evitar crashes
+const safe = (v, d='') => (v ?? d);
+const escapeHtml = (s) =>
+  safe(String(s))
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;');
+
 function looksLikeJWT(t){ return typeof t==='string' && t.split('.').length===3; }
 function getToken(){ const raw=(localStorage.getItem('token')||'').trim(); return looksLikeJWT(raw)?raw:null; }
 function buildAuthHeaders(body, extra={}){ const token=getToken(); const base=(body instanceof FormData)?{...(extra||{})}:{'Content-Type':'application/json',...(extra||{})}; return token?{...base,Authorization:`Bearer ${token}`} : base; }
@@ -123,31 +131,42 @@ function injectRatingsUI(rootEl, answersCache){
   });
 }
 
+// >>>>>>>>>>>>>>>>>>  FIX: postCard SIN authorAvatar/authorName globales  <<<<<<<<<<<<<<<<<
 function postCard(post, answersByPost, convByAnswer){
+  // rol y permisos
   let role = localStorage.getItem('role');
   if(role==='1') role='coder'; else if(role==='2') role='team_leader'; else if(role==='3') role='admin';
-  const me=Number(localStorage.getItem('user_id'));
+
+  const me = Number(localStorage.getItem('user_id'));
   const isOwner = Number(post.user_id)===me;
   const canEdit = (role==='admin') || (role==='coder'&&isOwner) || (role==='team_leader'&&isOwner);
   const canDelete = (role==='admin') || (role==='team_leader') || (role==='coder'&&isOwner);
+
+  // autor del post (con fallbacks seguros)
+  const author = userName(post.user_id);
+  const avatar = userAvatar(post.user_id);
+
+  // imagen
   const hasImg = !!(post.image && String(post.image).trim());
   const imageBox = hasImg
     ? `<div class="post-image-box" data-full="${post.image}"><img src="${post.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
     : `<div class="post-image-box is-empty">IMG</div>`;
+
+  // answers + conversaciones
   const answers = answersByPost.get(post.post_id)||[];
   const answersHTML = answers.length ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>{
     const convs = convByAnswer.get(a.answer_id)||[];
     const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{
       const raw=c.description||'';
       const directed=raw.match(/^@(\S+)/);
-      const bodyHTML=raw.replace(/^@(\S+)/,(m,u)=>`<span class='mention'>@${u}</span>`);
+      const bodyHTML=escapeHtml(raw).replace(/^@(\S+)/,(m,u)=>`<span class='mention'>@${u}</span>`);
       const canDelConv = me===Number(c.user_id);
       return `<div class='conversation-item${directed?' is-directed':''}' data-conv='${c.conversation_id}'>
         <div class='ig-comment-line'>
           <img class='ig-avatar' src='${userAvatar(c.user_id)}' alt='avatar'
                style='width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:4px;'
                onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" />
-          <span class='ig-user'>${userName(c.user_id)}</span>
+          <span class='ig-user'>${escapeHtml(userName(c.user_id))}</span>
           <span class='ig-text'>${bodyHTML}</span>
         </div>
         <div class='ig-actions-row'>
@@ -162,8 +181,8 @@ function postCard(post, answersByPost, convByAnswer){
         <img class='ig-avatar' src='${userAvatar(a.user_id)}' alt='avatar'
              style='width:28px;height:28px;border-radius:50%;object-fit:cover;margin-right:6px;'
              onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" />
-        <span class='ig-user'>${userName(a.user_id)}</span>
-        <span class='ig-text'>${a.description||''}</span>
+        <span class='ig-user'>${escapeHtml(userName(a.user_id))}</span>
+        <span class='ig-text'>${escapeHtml(a.description||'')}</span>
       </div>
       <div class='ig-actions-row'>
         <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button>
@@ -173,12 +192,19 @@ function postCard(post, answersByPost, convByAnswer){
       <div class='ig-replies'>${convHTML}</div>
     </div>`;
   }).join('')}</div>` : '';
+
   return `<article class="card post-card">
-    <h4>${post.title || ''}</h4>
+    <h4>${escapeHtml(post.title || '')}</h4>
     <div class="post-meta">
-      <span class="post-author"><img class="post-author-avatar" src="${authorAvatar}" alt="avatar" onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" /> ${authorName}</span> · <span>Tipo: ${post.type||'-'}</span> · <span>Estado: ${post.status||'unsolved'}</span>
+      <span class="post-author">
+        <img class="post-author-avatar" src="${avatar}" alt="avatar"
+             onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" />
+        ${escapeHtml(author)}
+      </span>
+      · <span>Tipo: ${escapeHtml(post.type||'-')}</span>
+      · <span>Estado: ${escapeHtml(post.status||'unsolved')}</span>
     </div>
-    <p class="post-desc">${post.description||''}</p>
+    <p class="post-desc">${escapeHtml(post.description||'')}</p>
     ${imageBox}
     <div class="post-actions">
       ${canEdit?`<button class='btn-edit' data-id='${post.post_id}'>Editar</button>`:''}
@@ -191,6 +217,7 @@ function postCard(post, answersByPost, convByAnswer){
     </form>
   </article>`;
 }
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 async function getJSON(url){ const r=await fetch(url); if(!r.ok) throw new Error(`${r.status} ${r.statusText}`); return r.json(); }
 
@@ -420,7 +447,7 @@ export async function renderDashboardAfterTemplateLoaded(){
       form.className='conversation-form';
       form.setAttribute('data-answer', answerId);
       if(userId) form.setAttribute('data-target', userId);
-      form.innerHTML=`<div class='reply-context'>Respondiendo a <b>${userName(userId)}</b></div><input name='description' placeholder='Escribe tu respuesta...'/><button type='submit'>↳</button>`;
+      form.innerHTML=`<div class='reply-context'>Respondiendo a <b>${escapeHtml(userName(userId))}</b></div><input name='description' placeholder='Escribe tu respuesta...'/><button type='submit'>↳</button>`;
       const anchor=trigger.closest('.ig-actions-row')||answerBox;
       anchor.insertAdjacentElement('afterend', form);
       form.querySelector('input').focus();
@@ -714,4 +741,3 @@ function initSOFinder(root) {
   // Primera carga por defecto
   run('hot', { tagged: 'javascript', pagesize: 5 });
 }
-
