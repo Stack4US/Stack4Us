@@ -4,7 +4,8 @@ import {
   getAnswersRatingsSummary,
   getMyRatings,
   getUserRatingSummary,
-  getRanking
+  getRanking,
+  insertRating
 } from '../controllers/ratings.controller.js';
 
 const router = express.Router();
@@ -13,6 +14,7 @@ router.get('/answers-summary', getAnswersRatingsSummary);
 router.get('/my-ratings', authenticateToken, getMyRatings);
 router.get('/users/:user_id/summary', getUserRatingSummary);
 router.get('/ranking', getRanking);
+router.post('/', authenticateToken, insertRating);
 
 /* 
 rutas funcionales:
@@ -27,6 +29,9 @@ no requiere autenticación, recibe el id del usuario en la URL
 
 /api/ratings/ranking -> GET -> obtener el ranking de usuarios mejor calificados
 no requiere autenticación, acepta parámetros opcionales min_votes, role, limit en la query string
+
+/api/ratings/ -> POST -> insertar una nueva calificación para una respuesta
+recibe el token en el header Authorization y en el body el answer_id y la rating
 */
 
 export default router;

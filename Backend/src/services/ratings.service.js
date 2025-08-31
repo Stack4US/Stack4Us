@@ -12,6 +12,16 @@ export async function getAnswersRatingsSummary() {
   return result.rows;
 }
 
+export async function insertRating({ user_id, answer_id, rating }) {
+  const result = await pool.query(
+    `INSERT INTO answer_ratings (user_id, answer_id, rating)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [user_id, answer_id, rating]
+  );
+  return result.rows[0];
+}
+
 export async function getMyRatings(userId) {
   const sql = `
     SELECT rating_id, answer_id, user_id, rating

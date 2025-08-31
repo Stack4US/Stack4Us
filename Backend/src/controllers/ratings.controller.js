@@ -9,6 +9,34 @@ export async function getAnswersRatingsSummary(req, res, next) {
   }
 }
 
+export async function insertRating(req, res, next) {
+
+  try {
+    const user_id = req.user.user_id;
+    const { answer_id, rating } = req.body;
+
+    if (!answer_id || !rating) {
+      return res.status(400).json({ error: "answer_id and rating are required" });
+    }
+
+    const data = await ratingsService.insertRating({
+      user_id,
+      answer_id,
+      rating
+    });
+
+    res.status(201).json({
+      message: "Rating added successfully",
+      rating: data
+    });
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "You already rated this answer" });
+    }
+    next(err);
+  }
+}
+
 export async function getMyRatings(req, res, next) {
   try {
     const userId = req.user.user_id;
