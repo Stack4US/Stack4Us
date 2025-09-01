@@ -1,6 +1,6 @@
 // Dashboard view logic (fetching and rendering)
-// Administra carga de posts, answers y conversaciones (replies a answers)
-// Validaciones reales van en el backend.
+// Manages loading of posts, answers and conversations (replies to answers)
+// Real validation should happen in backend.
 
 const API_BASE = 'https://stack4us.up.railway.app';
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
@@ -24,7 +24,8 @@ function buildEndpoints(){
     listUsers: `${p}/users/all`,
     ratingsSummary: `${p}/ratings/answers-summary`,
     myRatings: `${p}/ratings/my-ratings`,
-    rateAnswer: id => `${p}/answers/${id}/rate`,
+    createRating: `${p}/ratings`,            // <--- NUEVO endpoint principal POST
+    legacyRateAnswer: id => `${p}/answers/${id}/rate`, // <--- fallback legacy
 
     // Stack Overflow (vía backend)
     soHot:    `${p}/stackoverflow/hot`,
@@ -84,7 +85,7 @@ const escapeHtml = (s) =>
 function looksLikeJWT(t){ return typeof t==='string' && t.split('.').length===3; }
 function getToken(){ const raw=(localStorage.getItem('token')||'').trim(); return looksLikeJWT(raw)?raw:null; }
 function buildAuthHeaders(body, extra={}){ const token=getToken(); const base=(body instanceof FormData)?{...(extra||{})}:{'Content-Type':'application/json',...(extra||{})}; return token?{...base,Authorization:`Bearer ${token}`} : base; }
-async function apiFetch(path,opt={}){ const url=path.startsWith('http')?path:`${API_BASE}${path}`; const headers=buildAuthHeaders(opt.body,opt.headers); const resp=await fetch(url,{...opt,headers}); if(resp.status===401||resp.status===403){ alert('Sesión expirada. Inicia otra vez.'); localStorage.removeItem('token'); localStorage.setItem('Auth','false'); try{ const {navigate}=await import('../main'); navigate('/login'); }catch{} throw new Error('Unauthorized'); } return resp; }
+async function apiFetch(path,opt={}){ const url=path.startsWith('http')?path:`${API_BASE}${path}`; const headers=buildAuthHeaders(opt.body,opt.headers); const resp=await fetch(url,{...opt,headers}); if(resp.status===401||resp.status===403){ alert('Session expired. Please log in again.'); localStorage.removeItem('token'); localStorage.setItem('Auth','false'); try{ const {navigate}=await import('../main'); navigate('/login'); }catch{} throw new Error('Unauthorized'); } return resp; }
 
 // ============ CONVERSATIONS & USERS CACHE ============
 let conversationsCache=[]; // lista de conversation
@@ -130,7 +131,7 @@ function injectRatingsUI(rootEl, answersCache){
     const myR=myRatingsMap.get(answerId)||null;
     const aObj=answersCache.find(a=>Number(a.answer_id)===answerId);
     const isMine=aObj && Number(aObj.user_id)===me;
-    slot.innerHTML=`${renderStars(answerId, info.avg, myR, isMine)}<small style='display:block;text-align:right;color:#888;margin-top:2px'>${info.count||0} voto(s)</small>`;
+    slot.innerHTML=`${renderStars(answerId, info.avg, myR, isMine)}<small style='display:block;text-align:right;color:#888;margin-top:2px'>${info.count||0} vote(s)</small>`;
   });
 }
 
@@ -157,7 +158,8 @@ function postCard(post, answersByPost, convByAnswer){
 
   // answers + conversaciones
   const answers = answersByPost.get(post.post_id)||[];
-  const answersHTML = answers.length ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>{
+  const answersCount = answers.length;
+  const answersHTML = answersCount ? `<div class="answers-wrap" style="margin-top:8px">${answers.map(a=>{
     const convs = convByAnswer.get(a.answer_id)||[];
     const convHTML = convs.length ? `<div class='conversation-thread'>${convs.map(c=>{
       const raw=c.description||'';
@@ -173,8 +175,8 @@ function postCard(post, answersByPost, convByAnswer){
           <span class='ig-text'>${bodyHTML}</span>
         </div>
         <div class='ig-actions-row'>
-          <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${c.user_id}' data-source='conversation'>Responder</button>
-          ${canDelConv?`<button class='ig-action comment-delete' data-type='conversation' data-conv='${c.conversation_id}'>Eliminar</button>`:''}
+          <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${c.user_id}' data-source='conversation'>Reply</button>
+          ${canDelConv?`<button class='ig-action comment-delete' data-type='conversation' data-conv='${c.conversation_id}'>Delete</button>`:''}
         </div>
       </div>`;
     }).join('')}</div>`: '';
@@ -188,15 +190,15 @@ function postCard(post, answersByPost, convByAnswer){
         <span class='ig-text'>${escapeHtml(a.description||'')}</span>
       </div>
       <div class='ig-actions-row'>
-        <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Responder</button>
-        ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Eliminar</button>`:''}
+        <button class='reply-trigger ig-action' data-answer='${a.answer_id}' data-user='${a.user_id}' data-source='answer'>Reply</button>
+        ${canDelAnswer?`<button class='ig-action comment-delete' data-type='answer' data-answer='${a.answer_id}'>Delete</button>`:''}
         <div class='rating-slot' data-answer='${a.answer_id}'></div>
       </div>
       <div class='ig-replies'>${convHTML}</div>
     </div>`;
   }).join('')}</div>` : '';
 
-  return `<article class="card post-card">
+  return `<article class="card post-card" data-post="${post.post_id}">
     <h4>${escapeHtml(post.title || '')}</h4>
     <div class="post-meta">
       <span class="post-author">
@@ -204,20 +206,23 @@ function postCard(post, answersByPost, convByAnswer){
              onerror="this.src='${DEFAULT_AVATAR}';this.onerror=null;" />
         ${escapeHtml(author)}
       </span>
-      · <span>Tipo: ${escapeHtml(post.type||'-')}</span>
-      · <span>Estado: ${escapeHtml(post.status||'unsolved')}</span>
+      · <span>Type: ${escapeHtml(post.type||'-')}</span>
+      · <span>Status: ${escapeHtml(post.status||'unsolved')}</span>
     </div>
     <p class="post-desc">${escapeHtml(post.description||'')}</p>
     ${imageBox}
     <div class="post-actions">
-      ${canEdit?`<button class='btn-edit' data-id='${post.post_id}'>Editar</button>`:''}
-      ${canDelete?`<button class='btn-delete' data-id='${post.post_id}'>Eliminar</button>`:''}
+      ${canEdit?`<button class='btn-edit' data-id='${post.post_id}'>Edit</button>`:''}
+      ${canDelete?`<button class='btn-delete' data-id='${post.post_id}'>Delete</button>`:''}
     </div>
-    ${answersHTML}
-    <form class='answer-form' data-post='${post.post_id}'>
-      <input name='description' placeholder='Add answer...'>
-      <button type='submit'>Enviar</button>
-    </form>
+    <button type='button' class='answers-toggle' data-post='${post.post_id}' data-count='${answersCount}'>Show answers (${answersCount})</button>
+    <div class='answers-section' data-post='${post.post_id}' hidden>
+      ${answersHTML}
+      <form class='answer-form' data-post='${post.post_id}'>
+        <input name='description' placeholder='Add answer...'>
+        <button type='submit'>Send</button>
+      </form>
+    </div>
   </article>`;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -324,9 +329,10 @@ export async function renderDashboardAfterTemplateLoaded(){
   const hint=document.getElementById('post-hint');
 
   let answersCache=[];
+  const expandedPosts = new Set();
   function groupAnswers(list){ const m=new Map(); list.forEach(a=>{ const arr=m.get(a.post_id)||[]; arr.push(a); m.set(a.post_id,arr); }); return m; }
 
-  async function loadUsers(){ try{ const r=await apiFetch(ENDPOINTS.listUsers); if(r.ok){ const data=await r.json(); usersMap=new Map(data.map(u=>[Number(u.user_id),u])); try{ localStorage.setItem('all_users_cache', JSON.stringify(data)); const meId=Number(localStorage.getItem('user_id')); const me=data.find(u=>Number(u.user_id)===meId); if(me){ if(me.profile_image) localStorage.setItem('profile_image', me.profile_image); if(me.user_name) localStorage.setItem('user_name', me.user_name); } }catch{} } }catch(err){ console.warn('No se pudieron cargar usuarios', err); } }
+  async function loadUsers(){ try{ const r=await apiFetch(ENDPOINTS.listUsers); if(r.ok){ const data=await r.json(); usersMap=new Map(data.map(u=>[Number(u.user_id),u])); try{ localStorage.setItem('all_users_cache', JSON.stringify(data)); const meId=Number(localStorage.getItem('user_id')); const me=data.find(u=>Number(u.user_id)===meId); if(me){ if(me.profile_image) localStorage.setItem('profile_image', me.profile_image); if(me.user_name) localStorage.setItem('user_name', me.user_name); localStorage.setItem('user_profile', JSON.stringify(me)); } }catch{} } }catch(err){ console.warn('Failed to load users', err); } }
   async function loadAnswers(){ answersCache = await getJSON(`${API_BASE}${ENDPOINTS.listAnswers}`); if(aEl) aEl.textContent=answersCache.length; if(pEl) pEl.textContent=String(answersCache.length*10); }
   async function loadConversations(){ try{ conversationsCache = await getJSON(`${API_BASE}${ENDPOINTS.listConversations}`);}catch{ conversationsCache=[]; } }
   async function loadPosts(){
@@ -342,14 +348,19 @@ export async function renderDashboardAfterTemplateLoaded(){
         : '<div class="card" style="padding:10px">No posts.</div>';
       if(RATINGS_ENABLED) injectRatingsUI(postsEl, answersCache);
       attachImageLightboxHandlers();
-      // (FAB se instala una sola vez fuera de aquí)
+      // re-open previously expanded posts
+      expandedPosts.forEach(pid=>{
+        const section = postsEl.querySelector(`.answers-section[data-post='${pid}']`);
+        const toggle = postsEl.querySelector(`.answers-toggle[data-post='${pid}']`);
+        if(section){ section.removeAttribute('hidden'); if(toggle){ const c=toggle.dataset.count||'0'; toggle.textContent=`Hide answers (${c})`; } }
+      });
     }
   }
 
   if(form){
     form.addEventListener('submit', async e=>{
       e.preventDefault();
-      if(hint) hint.textContent='Publicando…';
+      if(hint) hint.textContent='Publishing…';
       try{
         const fd=new FormData(form);
         const uid=localStorage.getItem('user_id');
@@ -358,36 +369,36 @@ export async function renderDashboardAfterTemplateLoaded(){
         const status=String(fd.get('status')||'').trim().toLowerCase();
         if(type) fd.set('type', type);
         if(status) fd.set('status', status);
-        const r=await fetch(`${API_BASE}${ENDPOINTS.createPost}`, {method:'POST', body:fd});
+        const r=await apiFetch(ENDPOINTS.createPost, {method:'POST', body:fd}); // NOW with auth
         if(!r.ok){
-          let msg='Error al crear el post.';
-          try{ const d=await r.json(); if(d?.detail||d?.error) msg=`Error al crear el post: ${d.detail||d.error}`; }catch{}
+          let msg='Error creating post.';
+            try{ const d=await r.json(); if(d?.detail||d?.error) msg=`Error creating post: ${d.detail||d.error}`; }catch{}
           throw new Error(msg);
         }
         form.reset();
-        if(hint) hint.textContent='¡Post creado!';
+        if(hint) hint.textContent='Post created!';
         await loadPosts();
       }catch(err){
         console.error(err);
-        if(hint) hint.textContent=err.message||'Error al crear el post.';
+        if(hint) hint.textContent=err.message||'Error creating post.';
       }
     });
   }
 
   if(postsEl){
-    // acciones (editar / eliminar)
+    // actions (edit / delete)
     postsEl.addEventListener('click', async e=>{
       const btn=e.target.closest('button'); if(!btn) return;
       const id=btn.dataset.id;
       if(btn.classList.contains('btn-delete')){
-        if(!confirm('Eliminar post?')) return;
+        if(!confirm('Delete post?')) return;
         try{
           const r=await apiFetch(ENDPOINTS.deletePost(id), {method:'DELETE'});
           if(r.ok){
             try{ const o=JSON.parse(localStorage.getItem('post_overrides')||'{}'); delete o[id]; localStorage.setItem('post_overrides', JSON.stringify(o)); }catch{}
             await loadPosts();
           } else {
-            try{ const err=await r.json(); alert(err.error||'Error eliminando'); }catch{}
+            try{ const err=await r.json(); alert(err.error||'Error deleting'); }catch{}
           }
         }catch(err){ console.error(err); }
       }
@@ -418,7 +429,7 @@ export async function renderDashboardAfterTemplateLoaded(){
       const txt=(input?.value||'').trim();
       if(!txt) return;
       const uid=localStorage.getItem('user_id');
-      if(!uid){ alert('Sesión inválida'); return; }
+      if(!uid){ alert('Invalid session'); return; }
       const fd=new FormData();
       fd.append('description', txt);
       fd.append('user_id', uid);
@@ -450,13 +461,13 @@ export async function renderDashboardAfterTemplateLoaded(){
       form.className='conversation-form';
       form.setAttribute('data-answer', answerId);
       if(userId) form.setAttribute('data-target', userId);
-      form.innerHTML=`<div class='reply-context'>Respondiendo a <b>${escapeHtml(userName(userId))}</b></div><input name='description' placeholder='Escribe tu respuesta...'/><button type='submit'>↳</button>`;
+      form.innerHTML=`<div class='reply-context'>Replying to <b>${escapeHtml(userName(userId))}</b></div><input name='description' placeholder='Write your reply...'/><button type='submit'>↳</button>`;
       const anchor=trigger.closest('.ig-actions-row')||answerBox;
       anchor.insertAdjacentElement('afterend', form);
       form.querySelector('input').focus();
     });
 
-    // enviar reply
+    // send reply
     postsEl.addEventListener('submit', async e=>{
       const cForm=e.target.closest('.conversation-form');
       if(!cForm) return;
@@ -467,7 +478,7 @@ export async function renderDashboardAfterTemplateLoaded(){
       let txt=(input?.value||'').trim();
       if(!txt) return;
       const uid=localStorage.getItem('user_id');
-      if(!uid){ alert('Sesión inválida'); return; }
+      if(!uid){ alert('Invalid session'); return; }
       if(targetUserId && !txt.startsWith('@')){
         const uname=userName(targetUserId).replace(/\s+/g,'');
         txt=`@${uname} ${txt}`;
@@ -484,26 +495,26 @@ export async function renderDashboardAfterTemplateLoaded(){
           await loadPosts();
         } else {
           let errInfo={}; try{ errInfo=await r.json(); }catch{}
-          alert(errInfo.error||'Error enviando');
+          alert(errInfo.error||'Error sending');
         }
       }catch(err){ console.error(err); }
     });
 
-    // eliminar answer o conversation
+    // delete answer or conversation
     postsEl.addEventListener('click', async e=>{
       const del=e.target.closest('.comment-delete');
       if(!del) return;
       e.preventDefault();
-      if(!confirm('Eliminar?')) return;
+      if(!confirm('Delete?')) return;
       const type=del.dataset.type;
       const id=del.dataset.answer||del.dataset.conv;
       try{
         if(type==='answer'){
           const r=await apiFetch(ENDPOINTS.deleteAnswer(id), {method:'DELETE'});
-          if(!r.ok) console.error('Fail delete answer', await r.json().catch(()=>({})));
+          if(!r.ok) console.error('Fail delete answer', await r.json().catch(()=>({}))); else {}
         } else {
           const r=await apiFetch(ENDPOINTS.deleteConversation(id), {method:'DELETE'});
-          if(!r.ok) console.error('Fail delete conv', await r.json().catch(()=>({})));
+          if(!r.ok) console.error('Fail delete conv', await r.json().catch(()=>({}))); else {}
         }
         await loadAnswers();
         await loadConversations();
@@ -515,19 +526,47 @@ export async function renderDashboardAfterTemplateLoaded(){
     postsEl.addEventListener('click', async e=>{
       const star=e.target.closest('.star'); if(star){
         if(!RATINGS_ENABLED) return;
-        if(!RATINGS_BACKEND_AVAILABLE){ return alert('Ratings aún no disponibles en este servidor'); }
+        if(!RATINGS_BACKEND_AVAILABLE){ return alert('Ratings not yet available on this server'); }
         const answerId=Number(star.dataset.answer); const value=Number(star.dataset.value);
-        if(!getToken()) return alert('Inicia sesión de nuevo');
+        if(!getToken()) return alert('Log in again');
         const aObj=answersCache.find(a=>Number(a.answer_id)===answerId); if(!aObj) return;
-        if(Number(aObj.user_id)===Number(localStorage.getItem('user_id'))) return alert('No puedes calificar tu propia respuesta');
-        if(myRatingsMap.has(answerId)) return alert('Ya calificaste');
+        if(Number(aObj.user_id)===Number(localStorage.getItem('user_id'))) return alert('You cannot rate your own answer');
+        if(myRatingsMap.has(answerId)) return alert('You already rated');
         if(!(value>=1&&value<=STAR_MAX)) return;
         try{
-          const r=await apiFetch(ENDPOINTS.rateAnswer(answerId), {method:'POST', body:JSON.stringify({rating:value})});
-          if(!r.ok){ const err=await r.json().catch(()=>({})); return alert(err.error||'Error rating'); }
+          // Intento 1: endpoint nuevo /ratings (body incluye answer_id)
+          let r = await apiFetch(ENDPOINTS.createRating, {method:'POST', body:JSON.stringify({answer_id:answerId, rating:value})});
+          if(!r.ok){
+            if(r.status===404 || r.status===405){
+              // Fallback legacy /answers/:id/rate (body sólo rating)
+              r = await apiFetch(ENDPOINTS.legacyRateAnswer(answerId), {method:'POST', body:JSON.stringify({rating:value})});
+            }
+          }
+          if(!r.ok){ const err=await r.json().catch(()=>({})); return alert(err.error||'Rating error'); }
           await loadRatingsFromAPI();
           await loadPosts();
-        }catch(err){ console.error('Rating network error', err); alert('Error de red al enviar rating'); }
+        }catch(err){ console.error('Rating network error', err); alert('Network error sending rating'); }
+      }
+    });
+
+    // toggle answers collapse
+    postsEl.addEventListener('click', e=>{
+      const t=e.target.closest('.answers-toggle');
+      if(!t) return;
+      e.preventDefault();
+      const pid=t.getAttribute('data-post');
+      const section=postsEl.querySelector(`.answers-section[data-post='${pid}']`);
+      if(!section) return;
+      const count=t.dataset.count||'0';
+      const hidden=section.hasAttribute('hidden');
+      if(hidden){
+        section.removeAttribute('hidden');
+        t.textContent=`Hide answers (${count})`;
+        expandedPosts.add(pid);
+      } else {
+        section.setAttribute('hidden','');
+        t.textContent=`Show answers (${count})`;
+        expandedPosts.delete(pid);
       }
     });
   }
@@ -537,7 +576,16 @@ export async function renderDashboardAfterTemplateLoaded(){
   if(RATINGS_ENABLED) await loadRatingsFromAPI();
   await loadConversations();
   await loadPosts();
-
+  const focusId = sessionStorage.getItem('focus_post_id');
+  if(focusId){
+    sessionStorage.removeItem('focus_post_id');
+    const el = document.querySelector(`article.post-card[data-post='${focusId}']`) || document.querySelector(`form.answer-form[data-post='${focusId}']`)?.closest('article');
+    if(el){
+      const section=el.querySelector('.answers-section');
+      const toggle=el.querySelector('.answers-toggle');
+      if(section && section.hasAttribute('hidden')){ section.removeAttribute('hidden'); if(toggle){ const c=toggle.dataset.count||'0'; toggle.textContent=`Hide answers (${c})`; } expandedPosts.add(focusId); }
+    }
+  }
   // Finder en el panel y FAB flotante
   mountStackOverflowWidget();
   setupSOFab();
@@ -549,7 +597,7 @@ function setupLightboxRoot(){
   if(document.getElementById('img-lightbox-root')) return;
   const div=document.createElement('div');
   div.id='img-lightbox-root';
-  div.innerHTML=`<div class="img-lightbox-backdrop" data-close="lb"><figure class="img-lightbox-figure"><img alt="Imagen del post" class="img-lightbox-img" /><figcaption class="img-lightbox-caption"></figcaption><button type="button" class="img-lightbox-close" data-close="lb" aria-label="Cerrar">×</button></figure></div>`;
+  div.innerHTML=`<div class="img-lightbox-backdrop" data-close="lb"><figure class="img-lightbox-figure"><img alt="Post image" class="img-lightbox-img" /><figcaption class="img-lightbox-caption"></figcaption><button type="button" class="img-lightbox-close" data-close="lb" aria-label="Close">×</button></figure></div>`;
   document.body.appendChild(div);
   div.addEventListener('click', e=>{ if(e.target.dataset.close==='lb') closeLightbox(); });
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
@@ -656,16 +704,9 @@ function closeSOFinderModal() {
 }
 
 function setupSOFab() {
-  let fab = document.querySelector('.fab[data-open-modal="so"]');
-  if (!fab) {
-    fab = document.createElement('button');
-    fab.className = 'fab';
-    fab.dataset.openModal = 'so';
-    fab.title = 'Stack Overflow Finder';
-    fab.textContent = 'Stack';
-    document.body.appendChild(fab);
-  }
-  if (fab.dataset.bound === '1') return; // evita múltiples addEventListener
+  const fab = document.getElementById('soFab');
+  if(!fab) return; // rely only on template button
+  if (fab.dataset.bound === '1') return;
   fab.addEventListener('click', openSOFinderModal);
   fab.dataset.bound = '1';
 }

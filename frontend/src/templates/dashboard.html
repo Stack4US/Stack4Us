@@ -4,7 +4,6 @@
       <nav class="side-nav" aria-label="Main navigation">
         <a class="side-item active" data-link href="/dashboard">Comments</a>
         <a class="side-item" data-link href="/ranking">Ranking</a>
-        <a class="side-item" data-link href="/about">About Us</a>
       </nav>
     </div>
 
@@ -20,13 +19,13 @@
   <div class="dashboard-main">
     <div class="dashboard-container">
       <div class="dash-head-with-bell">
-        <h1>Dashboard - Stack4Us</h1>
+        <h1>Comments</h1>
         <div class="dash-head-actions">
-          <button id="bellBtn" class="bell-btn" aria-label="Notificaciones" title="Notificaciones">
+          <button id="bellBtn" class="bell-btn" aria-label="Notifications" title="Notifications">
             <img id="bellIconImg" src="/src/assets/img/mdi_bell.png" alt="bell" width="24" height="24" />
             <span id="bellBadge" class="bell-badge hidden"></span>
           </button>
-          <div id="notifPopover" class="notif-popover hidden" role="dialog" aria-label="Notificaciones"></div>
+          <div id="notifPopover" class="notif-popover hidden" role="dialog" aria-label="Notifications"></div>
         </div>
       </div>
 
@@ -40,10 +39,6 @@
           <div class="card">
             <h3>Answers</h3>
             <p class="stat-number" id="answers-count">0</p>
-          </div>
-          <div class="card">
-            <h3>Points</h3>
-            <p class="stat-number" id="points-count">0</p>
           </div>
         </div>
 
@@ -91,9 +86,7 @@
 <button id="soFab"
         class="fab fab-so"
         aria-label="Open Stack Overflow Finder"
-        title="Stack Overflow Finder">
-  <img src="/src/assets/img/stack4us.png" alt="Stack4Us" />
-</button>
+        title="Stack Overflow Finder">Stack</button>
 
 <!-- MODAL: Stack Overflow Finder -->
 <div id="soModal" class="so-modal-backdrop" aria-hidden="true">

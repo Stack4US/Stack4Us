@@ -172,6 +172,12 @@ button:disabled{ background:#9aa0c9; cursor:not-allowed; }
 }
 .answer-item:hover{ border-color:#d0d2d8; }
 
+.answer-item .rating-slot{ margin-top:4px; }
+@media (max-width:600px){
+  .answer-item .ig-actions-row{ flex-wrap:wrap; }
+  .answer-item .rating-slot{ order:3; width:100%; margin-left:0; }
+}
+
 .answer-form{ display:flex; gap:6px; margin-top:6px; }
 .answer-form input{
   flex:1; padding:6px 8px; font-size:12px; border:1px solid var(--c-border);
@@ -493,3 +499,8 @@ body.so-modal-open{ overflow:hidden; }
 
 /* Mostrarlo solo cuando el body tenga la marca del dashboard */
 body.has-dashboard .fab { display: flex !important; }
+
+.post-author-avatar{
+  width:32px; height:32px; border-radius:50%; object-fit:cover; display:inline-block; vertical-align:middle; margin-right:6px; box-shadow:0 0 0 1px #e2e8f0;
+}
+.post-author{ display:inline-flex; align-items:center; gap:4px; font-weight:600; }

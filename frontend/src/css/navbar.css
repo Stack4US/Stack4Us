@@ -62,7 +62,7 @@ header .head-nav h1 { font-weight:300; }
 /* Dashboard-only layout */
 .dashboard-shell { position:relative; display:flex; gap:2rem; width:100%; max-width:1400px; margin:0 auto; padding:0 1rem 2rem; }
 
-.dashboard-shell .dashboard-main { flex:1; margin-left:250px; padding-top:5em; }
+.dashboard-shell .dashboard-main { flex:1; margin-left:250px; padding-top:3em; }
 
 .dashboard-shell .sidebar { position:fixed; left:0; top:var(--header-h); display:flex; flex-direction:column; justify-content:space-between; width:250px; height:calc(100vh - var(--header-h)); padding:1.75rem 0 1.25rem; border-right:1px solid #e5e5e5; overflow:auto; }
 
@@ -74,7 +74,7 @@ header .head-nav h1 { font-weight:300; }
 
 .dashboard-shell .side-item.active, .dashboard-shell .side-item:hover { background:#5E67CD; color:#fff; }
 
-.dashboard-shell .user-card { display:flex; align-items:center; gap:.7rem; margin:1rem; margin-top:auto; padding:.85rem .9rem; background:#f2f2f7; border-radius:10px; }
+.dashboard-shell .user-card { display:flex; align-items:center; gap:.7rem; margin:1rem; margin-top:auto; padding:.85rem .9rem; background:#f2f2f7; border-radius:10px; position:relative; top:0; }
 
 .dashboard-shell .avatar { width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:#ddd; border-radius:50%; font-size:1.2rem; }
 
@@ -89,7 +89,9 @@ body.has-dashboard { overflow:hidden; }
 body.has-dashboard #content { height:100vh; overflow:auto; padding-top:var(--header-h); }
 
 @media (min-width:1000px){ .dashboard-shell .sidebar { display:flex; flex-direction:column; } .dashboard-shell .side-nav { margin-top:.25rem; } }
-
+@media (min-width:1000px){
+  .dashboard-shell .user-card { margin-top:0.5rem; }
+}
 @media (max-width: 999px) {
     .app-nav { padding:0 1rem; }
 
@@ -293,4 +295,11 @@ body.menu-open{overflow:hidden;}
   .app-nav .brand{flex:0 0 auto !important;}
   .hamburger-btn{margin-left:auto;}
 }
+@media (max-width:999px){
+  #mobileNavLinks a.profile-link{ display:flex; align-items:center; gap:.5rem; }
+  #mobileNavLinks a.profile-link::before{ content:""; width:28px; height:28px; background:url(/src/assets/img/qlementine-icons_user-16.png) center/cover no-repeat; border-radius:50%; flex-shrink:0; }
+}
+
+.fab.fab-so{ bottom:32px !important; }
+@media (max-width:700px){ .fab.fab-so{ bottom:32px !important; } }
 

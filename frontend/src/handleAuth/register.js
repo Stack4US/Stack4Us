@@ -13,42 +13,42 @@ function register(apiBase) {
     const file = document.getElementById('profile_image')?.files[0];
 
     if (!user_name || !email || !password) {
-      alert('Por favor, completa usuario, email y contraseña');
+      alert('Please complete username, email and password');
       return;
     }
 
     const payload = { user_name, email, password };
     try {
-      // corregido: apiBase ya incluye /api/users
+      // corrected: apiBase already includes /api/users
       const regResp = await axios.post(`${apiBase}/register`, payload, { headers: { 'Content-Type': 'application/json' }});
       if (regResp.status !== 201) {
-        alert('Error registrando');
+        alert('Register error');
         return;
       }
 
-      // Si no hay datos extra, terminar.
+      // If no extra data, just finish.
       if (!description && !file) {
-        alert('Registro exitoso. Ahora inicia sesión.');
+        alert('Registration successful. Now log in.');
         return;
       }
 
-      // Auto-login rápido SOLO para subir imagen/descripcion
+      // Quick auto-login ONLY to upload image/description
       try {
         const loginResp = await axios.post(`${apiBase}/login`, { user_name, password });
         const token = loginResp.data?.token;
         if (token) {
-          // Guardar temporal para usarlo en la actualización
+          // Temporarily save to use it in the update
           localStorage.setItem('token', token);
           localStorage.setItem('Auth', 'true');
-          // obtener user_id del token (payload base64)
+          // get user_id from token (base64 payload)
           let userIdFromToken = null;
           try { const payload = JSON.parse(atob(token.split('.')[1])); userIdFromToken = payload.user_id; } catch{}
-          // PUT /api/users/profile (ya no /edit-user/:id)
+          // PUT /api/users/profile (no longer /edit-user/:id)
           const fd = new FormData();
           if (description) fd.append('description', description);
             if (file) fd.append('image', file);
           await fetch(`${apiBase}/profile`, { method:'PUT', body: fd, headers:{ Authorization:`Bearer ${token}` }}).catch(()=>{});
-          // Cargar lista para obtener imagen (getAll incluye profile_image)
+          // Load list to get image (getAll includes profile_image)
           try{
             const all = await fetch(`${apiBase}/all`, { headers:{ Authorization:`Bearer ${token}` }}).then(r=> r.ok? r.json(): []);
             const me = all.find(u=> Number(u.user_id)===Number(userIdFromToken));
@@ -61,12 +61,12 @@ function register(apiBase) {
           }catch{}
         }
       } catch (e2) {
-        console.warn('Auto update profile falló:', e2.message);
+        console.warn('Auto profile update failed:', e2.message);
       }
-      alert('Registro completado. Inicia sesión para continuar.');
+      alert('Registration completed. Log in to continue.');
     } catch (err) {
-      console.error('Error registrando:', err);
-      alert(err?.response?.data?.error || 'Error registrando');
+      console.error('Register error:', err);
+      alert(err?.response?.data?.error || 'Register error');
     }
   });
 }
