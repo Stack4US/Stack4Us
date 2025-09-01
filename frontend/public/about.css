@@ -33,11 +33,11 @@ body{
 /* Visibility helpers */
 .desktop-only{ display:block; }
 .mobile-only{ display:none; }
-/* Desktop >=1024px keeps carousel; below that (tablet/phone) show cards */
-@media (max-width:1023px){ .desktop-only{ display:none !important; } .mobile-only{ display:block; } }
+/* Below 1291px (tablets + smaller desktops + phones) use cards instead of carousel */
+@media (max-width:1290px){ .desktop-only{ display:none !important; } .mobile-only{ display:block; } }
 
-/* ===== Desktop Carousel (>=900px) ===== */
-@media (min-width:1024px){
+/* ===== Desktop Carousel (>=1291px) ===== */
+@media (min-width:1291px){
   .carousel-container{ position:relative; margin-top:26px; padding-inline: clamp(12px,6vw,64px); }
   .carousel-track{ display:flex; gap:22px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; scroll-padding-inline:10px; padding:6px clamp(40px,6vw,72px) 14px clamp(40px,6vw,72px); scrollbar-width:none; }
   .carousel-track::-webkit-scrollbar{ display:none; }
@@ -52,13 +52,12 @@ body{
   .carousel-dots button:hover{ transform:scale(1.12); background:linear-gradient(135deg,var(--about-accent-alt),var(--about-accent)); }
 }
 
-/* ===== Mobile/Tablet Static Grid (<1024px) ===== */
-/* Only activate grid layout when element is meant to be visible (mobile-only) */
-@media (max-width:1023px){
+/* ===== Card Grid (<1291px) ===== */
+@media (max-width:1290px){
   .about-cards-grid.mobile-only{ margin-top:34px; display:grid; gap:30px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
-  @media (max-width:640px){ .about-cards-grid.mobile-only{ gap:22px; } }
-  @media (max-width:440px){ .about-cards-grid.mobile-only{ grid-template-columns:1fr; gap:18px; } }
 }
+@media (max-width:640px){ .about-cards-grid.mobile-only{ gap:22px; } }
+@media (max-width:440px){ .about-cards-grid.mobile-only{ grid-template-columns:1fr; gap:18px; } }
 
 /* Card base */
 .card{ min-height:300px; border-radius:var(--about-radius); padding:24px 24px 26px; background:linear-gradient(150deg, rgba(34,43,55,.82), rgba(28,35,46,.58)); border:1px solid rgba(255,255,255,.06); position:relative; overflow:hidden; box-shadow:var(--about-shadow); transition:transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s; }
@@ -84,5 +83,4 @@ body{
 @media (max-width:400px){ .about-shell{ padding:16px 12px 60px; } .card{ min-height:250px; } }
 @media (prefers-reduced-motion:reduce){ .card, .carousel-arrow{ transition:none; } }
 
-/* Strong override to guarantee desktop hides mobile grid even after later rules */
-@media (min-width:1024px){ .mobile-only{ display:none !important; } }
+/* Strong override not needed now; logic handled above */
