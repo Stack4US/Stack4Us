@@ -69,7 +69,7 @@ export async function renderProfileAfterTemplateLoaded(){
     emailEl.textContent = storedProfile.email || email;
     descEl.textContent = storedProfile.description || 'No description set.';
     const img = storedProfile.profile_image || localStorage.getItem('profile_image');
-    const fallback = '/src/assets/img/qlementine-icons_user-16.png';
+  const fallback = '/img/qlementine-icons_user-16.png';
     if (img) { avatarEl.src = img; avatarEl.style.display='block'; }
     else { avatarEl.src = fallback; avatarEl.style.display='block'; }
     avatarEl.onerror = () => { avatarEl.onerror=null; avatarEl.src=fallback; };

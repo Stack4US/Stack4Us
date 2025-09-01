@@ -1,7 +1,7 @@
 const API_BASE='https://stack4us.up.railway.app';
 const API_NOTIF='/api/notifications';
 const POSTS_ENDPOINT = '/api/posts/all';
-const ICON_BASE='/src/assets/img';
+const ICON_BASE='/img';
 const ICON_EMPTY=`${ICON_BASE}/mdi_bell.png`;
 const ICON_BADGE=`${ICON_BASE}/mdi_bell-badge.png`;
 

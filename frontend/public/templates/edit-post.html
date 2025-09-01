@@ -1,0 +1,38 @@
+<div class="edit-post-shell">
+  <h1>Edit Post</h1>
+  <form id="edit-post-form" class="card edit-post-form" enctype="multipart/form-data">
+    <input type="hidden" name="post_id" id="ep_post_id" />
+    <label>Title
+      <input name="title" id="ep_title" placeholder="Title" />
+    </label>
+    <label>Type
+      <select name="type" id="ep_type">
+        <option value="">-- Keep --</option>
+        <option value="javascript">Javascript</option>
+        <option value="react">React</option>
+        <option value="node">Node</option>
+        <option value="bug">Bug</option>
+        <option value="other">Other</option>
+      </select>
+    </label>
+    <label>Status
+      <select name="status" id="ep_status">
+        <option value="">-- Keep --</option>
+        <option value="unsolved">Unsolved</option>
+        <option value="solved">Solved</option>
+      </select>
+    </label>
+    <label>Description
+      <textarea name="description" id="ep_description" rows="5" placeholder="Description"></textarea>
+    </label>
+    <label>Replace Image
+      <input type="file" name="image" id="ep_image" accept="image/*" />
+    </label>
+    <div id="ep_current_image" class="current-image"></div>
+    <div class="ep-actions">
+      <button type="submit">Save Changes</button>
+      <button type="button" id="ep_cancel">Cancel</button>
+      <small id="ep_hint"></small>
+    </div>
+  </form>
+</div>

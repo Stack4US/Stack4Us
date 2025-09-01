@@ -1,5 +1,5 @@
 const API = 'https://stack4us.up.railway.app/api';
-const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
+const DEFAULT_AVATAR = '/img/qlementine-icons_user-16.png';
 
 async function j(u, o) {
   const r = await fetch(u, o);

@@ -4,19 +4,28 @@ import register from "./handleAuth/register";
 import login from "./handleAuth/login";
 import { renderDashboardAfterTemplateLoaded } from "./views/dashboard";
 import { fetchNotifications, buildPopover, bindNotificationNavigation } from './views/notifications.js';
+// Global styles (bundled by Vite - SPA approach Option 1)
+import './css/theme.css';
+import './css/navbar.css';
+import './css/style.css';
+import './css/login.css';
+import './css/footer.css';
+import './css/dashboard.css';
+import './css/profile.css';
+import './css/edit-post.css';
 
 // Rutas (SPA)
 const routes = {
-  "/dashboard": "./src/templates/dashboard.html",
-  "/comments": "./src/templates/comments.html",
-  "/ranking": "./src/templates/ranking.html",
-  "/edit-post": "./src/templates/edit-post.html",
-  "/profile": "./src/templates/profile.html",
+  "/dashboard": "/templates/dashboard.html",
+  "/comments": "/templates/comments.html",
+  "/ranking": "/templates/ranking.html",
+  "/edit-post": "/templates/edit-post.html",
+  "/profile": "/templates/profile.html",
   // Auth
-  "/register": "./src/templates/auth/register.html",
-  "/login": "./src/templates/auth/login.html",
+  "/register": "/templates/auth/register.html",
+  "/login": "/templates/auth/login.html",
   // Página interna opcional de notificaciones (además del popover)
-  "/notifications": "./src/templates/notifications.html",
+  "/notifications": "/templates/notifications.html",
 };
 
 const url = "https://stack4us.up.railway.app/api/users"; // base solo para auth (login/register)
@@ -118,14 +127,7 @@ export async function navigate(pathname) {
   if (pathname === "/login") login(url);
   if (pathname === "/register") register(url);
 
-  const needsDashCSS = ["/dashboard","/ranking","/notifications"].includes(pathname);
-  if (needsDashCSS && !document.querySelector('link[data-dashboard-css]')) {
-    const l = document.createElement('link');
-    l.rel = 'stylesheet';
-    l.href = '/src/css/dashboard.css';
-    l.setAttribute('data-dashboard-css', '1');
-    document.head.appendChild(l);
-  }
+  // (dashboard/profile/edit-post styles already bundled)
 
   if (pathname === "/dashboard") {
     await renderDashboardAfterTemplateLoaded();
@@ -143,8 +145,8 @@ export async function navigate(pathname) {
     await mod.renderProfileAfterTemplateLoaded();
   }
   if (pathname === "/notifications") {
-    const mod = await import("./views/notifications.js");
-    await mod.renderNotificationsAfterTemplateLoaded();
+  const mod = await import("./views/notifications.js");
+  await mod.renderNotificationsAfterTemplateLoaded();
   }
 
   // NOTIFICATION POPUP
@@ -157,7 +159,7 @@ export async function navigate(pathname) {
     async function refresh(){
       try { cache=await fetchNotifications(); } catch { cache=[]; }
       bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
-      bellIcon.src = cache.some(n=> n.status!=='read')? '/src/assets/img/mdi_bell-badge.png':'/src/assets/img/mdi_bell.png';
+  bellIcon.src = cache.some(n=> n.status!=='read')? '/img/mdi_bell-badge.png':'/img/mdi_bell.png';
       pop.innerHTML = `<div class='notif-popover-header'><span>Notifications</span><button class='close-pop' data-close>x</button></div>` + buildPopover(cache);
       bindNotificationNavigation(pop);
       loaded=true; bindMarks();
@@ -172,7 +174,7 @@ export async function navigate(pathname) {
             li.classList.remove('unread'); btn.remove();
             cache=cache.map(n=> n.notification_id==id? {...n, status:'read'}:n);
             bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
-            bellIcon.src = cache.some(n=> n.status!=='read')? '/src/assets/img/mdi_bell-badge.png':'/src/assets/img/mdi_bell.png';
+            bellIcon.src = cache.some(n=> n.status!=='read')? '/img/mdi_bell-badge.png':'/img/mdi_bell.png';
           }catch{}
         });
       });
@@ -236,14 +238,6 @@ document.body.addEventListener("click", (e) => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Inject global theme if not present
-  if(!document.querySelector('link[data-global-theme]')){
-    const t=document.createElement('link');
-    t.rel='stylesheet';
-    t.href='/src/css/theme.css';
-    t.setAttribute('data-global-theme','1');
-    document.head.appendChild(t);
-  }
   document.body.classList.add('theme-dark');
   if (localStorage.getItem("Auth") === "true" && !hasValidToken()) {
     localStorage.setItem("Auth", "false");

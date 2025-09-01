@@ -1,0 +1,87 @@
+/* copied for production */
+/* Dark theme adaptation aligned with global variables if theme loaded */
+:root{
+  --about-bg: #0e1116;
+  --about-surface: #1b222c;
+  --about-surface-alt: #242f3b;
+  --about-border: #27313f;
+  --about-accent: #6366f1;
+  --about-accent-alt: #8b5cf6;
+  --about-text: #f1f5f9;
+  --about-text-dim: #94a3b8;
+  --about-radius: 22px;
+  --about-shadow: 0 14px 40px -18px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.04) inset;
+  --about-shadow-hover: 0 24px 60px -20px rgba(0,0,0,.85), 0 0 0 1px rgba(99,102,241,.25);
+}
+
+html, body { height: 100%; }
+body{
+  background:
+    radial-gradient(circle at 12% 18%, rgba(99,102,241,.2), rgba(99,102,241,0) 60%),
+    radial-gradient(circle at 82% 70%, rgba(139,92,246,.18), rgba(139,92,246,0) 55%),
+    linear-gradient(125deg,#0c0f14,#0d1016 38%,#0b1018 60%,#0e1116);
+  color: var(--about-text);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Hero ===== */
+.about-shell{ max-width: 1280px; margin: 0 auto; padding: 24px 20px 80px; }
+.about-hero{ text-align:center; padding: 28px 0 16px; }
+.about-hero h1{ margin:0 0 6px; font-size: clamp(30px,3.8vw,46px); font-weight:800; background:linear-gradient(135deg,var(--about-accent),var(--about-accent-alt)); -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:.8px; }
+.about-hero .subtitle{ margin:0 auto; max-width:840px; color:var(--about-text-dim); font-size:1.04rem; line-height:1.45; }
+
+/* Visibility helpers */
+.desktop-only{ display:block; }
+.mobile-only{ display:none; }
+/* Below 1291px (tablets + smaller desktops + phones) use cards instead of carousel */
+@media (max-width:1290px){ .desktop-only{ display:none !important; } .mobile-only{ display:block; } }
+
+/* ===== Desktop Carousel (>=1291px) ===== */
+@media (min-width:1291px){
+  .carousel-container{ position:relative; margin-top:26px; padding-inline: clamp(12px,6vw,64px); }
+  .carousel-track{ display:flex; gap:22px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth; scroll-padding-inline:10px; padding:6px clamp(40px,6vw,72px) 14px clamp(40px,6vw,72px); scrollbar-width:none; }
+  .carousel-track::-webkit-scrollbar{ display:none; }
+  .carousel-track .card{ flex:0 0 clamp(320px,33vw,420px); scroll-snap-align:center; }
+  .carousel-arrow{ position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; border:1px solid rgba(255,255,255,.08); background:linear-gradient(145deg, rgba(34,43,55,.85), rgba(28,35,46,.65)); color:var(--about-accent-alt); font-size:22px; font-weight:700; display:grid; place-items:center; box-shadow:0 10px 30px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset; cursor:pointer; transition:.3s transform,.3s box-shadow,.3s background,.3s border-color; z-index:2; }
+  .carousel-arrow:hover{ transform:translateY(-50%) scale(1.08); box-shadow:0 16px 40px -14px rgba(0,0,0,.75); border-color:rgba(99,102,241,.5); background:linear-gradient(145deg, rgba(38,47,59,.9), rgba(32,40,50,.7)); }
+  .carousel-arrow.prev{ left: clamp(4px, 2vw, 24px); }
+  .carousel-arrow.next{ right: clamp(4px, 2vw, 24px); }
+  .carousel-dots{ display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .carousel-dots button{ width:8px; height:8px; border-radius:999px; border:none; background:rgba(255,255,255,.25); cursor:pointer; transition:width .25s ease, background .25s ease, transform .25s ease; }
+  .carousel-dots button.active{ width:28px; background:linear-gradient(135deg,var(--about-accent),var(--about-accent-alt)); }
+  .carousel-dots button:hover{ transform:scale(1.12); background:linear-gradient(135deg,var(--about-accent-alt),var(--about-accent)); }
+}
+
+/* ===== Card Grid (<1291px) ===== */
+@media (max-width:1290px){
+  .about-cards-grid.mobile-only{ margin-top:34px; display:grid; gap:30px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+}
+@media (max-width:640px){ .about-cards-grid.mobile-only{ gap:22px; } }
+@media (max-width:440px){ .about-cards-grid.mobile-only{ grid-template-columns:1fr; gap:18px; } }
+
+/* Card base */
+.card{ min-height:300px; border-radius:var(--about-radius); padding:24px 24px 26px; background:linear-gradient(150deg, rgba(34,43,55,.82), rgba(28,35,46,.58)); border:1px solid rgba(255,255,255,.06); position:relative; overflow:hidden; box-shadow:var(--about-shadow); transition:transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s cubic-bezier(.4,0,.2,1), border-color .35s; }
+.card:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(99,102,241,.28),rgba(139,92,246,0) 60%);opacity:.55;pointer-events:none;}
+.card:hover{ transform:translateY(-10px) scale(1.015); box-shadow:var(--about-shadow-hover); border-color:rgba(99,102,241,.4); }
+ .card h2{ margin:0 0 14px; font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--about-accent),var(--about-accent-alt)); -webkit-background-clip:text; background-clip:text; color:transparent; letter-spacing:.5px; }
+ .card h3{ margin:16px 0 6px; font-size:16px; font-weight:600; color:var(--about-accent); }
+ .card p, .card li{ color:var(--about-text-dim); line-height:1.48; }
+.card ul, .card ol{ margin:10px 0 0 18px; padding:0; }
+
+/* Mini cards inside Roles */
+.mini-grid{ display:flex; gap:10px; flex-wrap:wrap; }
+.mini-card{ flex:1 1 110px; background:linear-gradient(145deg, rgba(34,43,55,.75), rgba(28,35,46,.55)); border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:14px 13px; transition:transform .3s ease, box-shadow .3s ease, border-color .3s; box-shadow:0 8px 22px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03) inset; }
+.mini-card:hover{ transform:translateY(-6px); border-color:rgba(99,102,241,.45); box-shadow:0 18px 38px -16px rgba(0,0,0,.75), 0 0 0 1px rgba(99,102,241,.25); }
+.mini-card h3{ color:var(--about-accent); margin-bottom:6px; }
+
+/* Arrows/dots styles kept only inside >=900px media query */
+
+/* Responsive */
+@media (max-width:1180px){ .about-shell{ padding:24px 28px 72px; } }
+@media (max-width:1023px){ .about-hero h1{ font-size: clamp(34px,6vw,44px); } }
+@media (max-width:520px){ .about-shell{ padding:18px 14px 70px; } .card{ min-height:260px; } }
+@media (max-width:400px){ .about-shell{ padding:16px 12px 60px; } .card{ min-height:250px; } }
+@media (prefers-reduced-motion:reduce){ .card, .carousel-arrow{ transition:none; } }
+
+/* Strong override not needed now; logic handled above */
