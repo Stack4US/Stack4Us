@@ -24,7 +24,7 @@ function login(url) {
     const password  = (passInput?.value || '').trim();      //ablandoa
 
     if (!user_name || !password) {
-      alert('Por favor, completa todos los campos');
+      alert('Please fill all fields');
       return;
     }
 
@@ -40,7 +40,7 @@ function login(url) {
       loged = resp.status === 200 || resp.status === 201;
 
       if (!loged) {
-        alert('Usuario o contraseña inválidos');
+        alert('Invalid username or password');
         return;
       }
 
@@ -63,8 +63,8 @@ function login(url) {
       }
 
       if (!looksLikeJWT(token)) {
-        console.warn('[login] No se recibió un JWT válido (evito guardar token).');
-        alert('No se recibió un token válido. Intenta de nuevo.');
+        console.warn('[login] No valid JWT received (avoid storing token).');
+        alert('A valid token was not received. Try again.');
         // asegurar estado "no autenticado"
         localStorage.setItem('Auth', 'false');
         localStorage.removeItem('token');
@@ -94,7 +94,7 @@ function login(url) {
           localStorage.setItem('user_id', String(payloadJson.user_id));
         }
       } catch (e) {
-        console.warn('[login] decode jwt fallo', e);
+        console.warn('[login] jwt decode failed', e);
       }
 
       // Persistir datos de usuario de la respuesta (tiene prioridad)
@@ -117,11 +117,11 @@ function login(url) {
       navigate('/dashboard');
 
     } catch (err) {
-      console.error('Login error:', err); //ablandoa
+      console.error('Login error:', err); // abl
       const msg =
         err?.response?.data?.error ||
         err?.message ||
-        'Error al iniciar sesión';
+        'Error logging in';
       alert(msg);
     } finally {
       // re-enable button //ablandoa

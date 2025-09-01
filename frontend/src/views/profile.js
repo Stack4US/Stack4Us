@@ -19,7 +19,7 @@ export async function renderProfileAfterTemplateLoaded(){
   const btnCancel = document.getElementById('btnCancelDesc');
   const hint = document.getElementById('descHint');
 
-  const API = 'http://localhost:3000';
+  const API = 'https://stack4us.up.railway.app';
 
   // Basic user info
   const user_name = localStorage.getItem('user_name') || 'User';
@@ -42,6 +42,26 @@ export async function renderProfileAfterTemplateLoaded(){
     }catch{}
   }
   hydrateFromCache();
+
+  async function refreshFromAPI(){
+    try{
+      const token = localStorage.getItem('token');
+      if(!token || !user_id) return;
+      const r = await fetch(`${API}/api/users/all`, { headers:{ Authorization:`Bearer ${token}` }});
+      if(r.ok){
+        const list = await r.json();
+        const me = list.find(u=> String(u.user_id)===String(user_id));
+        if(me){
+          storedProfile = { ...storedProfile, ...me };
+          localStorage.setItem('user_profile', JSON.stringify(storedProfile));
+          if(me.profile_image) localStorage.setItem('profile_image', me.profile_image);
+          if(me.user_name) localStorage.setItem('user_name', me.user_name);
+          paint();
+        }
+      }
+    }catch(err){ console.warn('profile refresh fail', err); }
+  }
+  await refreshFromAPI();
 
   function paint(){
     nameEl.textContent = storedProfile.user_name || user_name;

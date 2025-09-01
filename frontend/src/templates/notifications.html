@@ -3,7 +3,8 @@
     <div class="sidebar-scroll">
       <nav class="side-nav" aria-label="Main navigation">
         <a class="side-item" data-link href="/dashboard">Comments</a>
-        <a class="side-item active" data-link href="/ranking">Ranking</a>
+        <a class="side-item" data-link href="/ranking">Ranking</a>
+        <a class="side-item active" data-link href="/notifications">Notifications</a>
       </nav>
     </div>
     <div class="user-card" id="sidebarUserCard">
@@ -14,15 +15,10 @@
       </div>
     </div>
   </aside>
-
   <div class="dashboard-main">
     <div class="dashboard-container">
-      <h1>Top 10 – Best Rated</h1> <!-- ablandoa -->
-      
-      <!-- Contenedor dinámico que pobla ranking.js -->
-      <div id="rankingList" class="stack"> <!-- ablandoa -->
-        <div class="card" style="padding:10px">Loading ranking…</div> <!-- ablandoa (placeholder opcional) -->
-      </div>
+      <h1>Notifications</h1>
+      <div id="notificationsRoot" class="stack"></div>
     </div>
   </div>
 </div>

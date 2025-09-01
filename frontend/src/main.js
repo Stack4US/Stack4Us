@@ -3,22 +3,23 @@ import isAuth from "./handleAuth/isAuth";
 import register from "./handleAuth/register";
 import login from "./handleAuth/login";
 import { renderDashboardAfterTemplateLoaded } from "./views/dashboard";
+import { fetchNotifications, buildPopover, bindNotificationNavigation } from './views/notifications.js';
 
 // Rutas (SPA)
 const routes = {
   "/dashboard": "./src/templates/dashboard.html",
   "/comments": "./src/templates/comments.html",
   "/ranking": "./src/templates/ranking.html",
-  // "/about": "./src/templates/about.html",   // <-- BORRADO: About queda como página estática pública
   "/edit-post": "./src/templates/edit-post.html",
   "/profile": "./src/templates/profile.html",
-
-  // Login y Registro
+  // Auth
   "/register": "./src/templates/auth/register.html",
   "/login": "./src/templates/auth/login.html",
+  // Página interna opcional de notificaciones (además del popover)
+  "/notifications": "./src/templates/notifications.html",
 };
 
-const url = "http://localhost:3000/api/users"; // base solo para auth (login/register)
+const url = "https://stack4us.up.railway.app/api/users"; // base solo para auth (login/register)
 
 // helper minúsculo para validar formato de JWT
 function hasValidToken() {
@@ -29,16 +30,12 @@ function hasValidToken() {
 function setupNavigation(currentPath) {
   const nav = document.getElementById("navUl");
   if (!nav) return;
-
-  // Páginas "app" dentro de la SPA (sin About)
-  const appPages = ["/dashboard", "/ranking"];
+  const appPages = ["/dashboard", "/ranking"]; // internal app pages
   const onAppPages = appPages.includes(currentPath);
   const isMobile = window.innerWidth < 1000;
   const activeClass = (p) => (currentPath === p ? "active" : "");
 
-  // Estando en páginas de la app (dashboard/ranking)
   if (onAppPages) {
-    // Si no hay sesión o token inválido, mostramos Register + About (estático) y salimos
     if (!isAuth() || !hasValidToken()) {
       nav.innerHTML = `
         <a href="/about.html" class="noAuth">About</a>
@@ -47,12 +44,10 @@ function setupNavigation(currentPath) {
       `;
       return;
     }
-
-    // Autenticado: en móvil mostramos navegación completa; en desktop solo Logout
     if (isMobile) {
       nav.innerHTML = `
-        <a href="/dashboard" data-link class="${activeClass("/dashboard")}">Comentarios</a>
-        <a href="/ranking" data-link class="${activeClass("/ranking")}">Ranking</a>
+        <a href="/dashboard" data-link class="${activeClass('/dashboard')}">Comments</a>
+        <a href="/ranking" data-link class="${activeClass('/ranking')}">Ranking</a>
         <a href="/logout" data-link id="close-sesion">Logout</a>
       `;
     } else {
@@ -61,18 +56,15 @@ function setupNavigation(currentPath) {
     return;
   }
 
-  // Fuera de páginas app (por ejemplo /login o /register)
   if (!isAuth() || !hasValidToken()) {
-    // IMPORTANTE: About apunta a /about.html y SIN data-link para que no lo intercepte el router
     nav.innerHTML = `
-    <a href="/about.html" class="noAuth">About</a>
+      <a href="/about.html" class="noAuth">About</a>
       <a href="/register" class="noAuth" data-link>Register</a>
       <a href="/login" class="noAuth" data-link>Login</a>
     `;
     return;
   }
 
-  // Autenticado en otras rutas públicas (si las hubiera)
   nav.innerHTML = `
     <a href="/dashboard" data-link>Dashboard</a>
     <a href="/ranking" data-link>Ranking</a>
@@ -80,59 +72,119 @@ function setupNavigation(currentPath) {
   `;
 }
 
+function setupMobileMenu(path){
+  const btn=document.getElementById('hamburgerBtn');
+  const drawer=document.getElementById('mobileMenu');
+  const linksWrap=document.getElementById('mobileNavLinks');
+  const footer=document.getElementById('mobileMenuFooter');
+  if(!btn||!drawer||!linksWrap) return;
+  function build(){
+    const isAuthd = isAuth() && hasValidToken();
+    linksWrap.innerHTML = isAuthd ? `
+      <a href="/dashboard" data-link class="${path==='/dashboard'?'active':''}">Comments</a>
+      <a href="/ranking" data-link class="${path==='/ranking'?'active':''}">Ranking</a>
+      <a href="/profile" data-link class="profile-link ${path==='/profile'?'active':''}">My Profile</a>
+    ` : `
+      <a href="/about.html">About</a>
+      <a href="/register" data-link>Register</a>`;
+    footer.innerHTML = isAuthd ? `<a href="/logout" data-link id="close-sesion">Logout</a>` : '';
+  }
+  build();
+  function open(){ drawer.classList.remove('hidden'); drawer.classList.add('open'); btn.classList.add('is-open'); btn.setAttribute('aria-expanded','true'); document.body.classList.add('menu-open'); }
+  function close(){ drawer.classList.add('hidden'); drawer.classList.remove('open'); btn.classList.remove('is-open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('menu-open'); }
+  btn.onclick = ()=>{ if(drawer.classList.contains('hidden')) open(); else close(); };
+  drawer.addEventListener('click', e=>{ if(e.target.dataset.close==='drawer') close(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+  setupMobileMenu.rebuild = (newPath)=>{ path=newPath; build(); };
+}
+
 export async function navigate(pathname) {
-  // Gate para no autenticados o token inválido (solo permitimos login y register)
   if ((!isAuth() || !hasValidToken()) && pathname !== "/login" && pathname !== "/register") {
     pathname = "/login";
   }
 
   const route = routes[pathname];
-  const html = await fetch(route).then((res) => res.text());
+  if(!route){
+    // fallback
+    pathname = isAuth() && hasValidToken() ? '/dashboard' : '/login';
+  }
+  const html = await fetch(routes[pathname]).then((res) => res.text());
   document.getElementById("content").innerHTML = html;
   history.pushState({}, "", pathname);
 
-  // Sidebar/layout fijo (SÓLO en dashboard y ranking)
-  if (pathname === "/dashboard" || pathname === "/ranking") {
-    document.body.classList.add("has-dashboard");
-  } else {
-    document.body.classList.remove("has-dashboard");
-  }
+  const layoutPages = ["/dashboard","/ranking","/notifications"]; // agregar aquí si se desea que tengan layout
+  if (layoutPages.includes(pathname)) document.body.classList.add("has-dashboard"); else document.body.classList.remove("has-dashboard");
 
   if (pathname === "/login") login(url);
   if (pathname === "/register") register(url);
 
-  // DASHBOARD
-  if (pathname === "/dashboard") {
-    if (!document.querySelector('link[data-dashboard-css]')) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = '/src/css/dashboard.css';
-      l.setAttribute('data-dashboard-css', '1');
-      document.head.appendChild(l);
-    }
-    await renderDashboardAfterTemplateLoaded();
+  const needsDashCSS = ["/dashboard","/ranking","/notifications"].includes(pathname);
+  if (needsDashCSS && !document.querySelector('link[data-dashboard-css]')) {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = '/src/css/dashboard.css';
+    l.setAttribute('data-dashboard-css', '1');
+    document.head.appendChild(l);
   }
 
-  // RANKING
+  if (pathname === "/dashboard") {
+    await renderDashboardAfterTemplateLoaded();
+  }
   if (pathname === "/ranking") {
     const mod = await import("./views/ranking.js");
     await mod.renderRankingAfterTemplateLoaded();
   }
-
-  // EDIT POST
   if (pathname === "/edit-post") {
     const mod = await import("./views/editPost.js");
     await mod.renderEditPostAfterTemplateLoaded();
   }
-
-  // PROFILE
   if (pathname === "/profile") {
     const mod = await import("./views/profile.js");
     await mod.renderProfileAfterTemplateLoaded();
   }
+  if (pathname === "/notifications") {
+    const mod = await import("./views/notifications.js");
+    await mod.renderNotificationsAfterTemplateLoaded();
+  }
 
-  // Render de navegación después de cargar el template
+  // NOTIFICATION POPUP
+  const bellBtn=document.getElementById('bellBtn');
+  const bellIcon=document.getElementById('bellIconImg');
+  const bellBadge=document.getElementById('bellBadge');
+  const pop=document.getElementById('notifPopover');
+  if(bellBtn && pop){
+    let open=false; let loaded=false; let cache=[];
+    async function refresh(){
+      try { cache=await fetchNotifications(); } catch { cache=[]; }
+      bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
+      bellIcon.src = cache.some(n=> n.status!=='read')? '/src/assets/img/mdi_bell-badge.png':'/src/assets/img/mdi_bell.png';
+      pop.innerHTML = `<div class='notif-popover-header'><span>Notifications</span><button class='close-pop' data-close>x</button></div>` + buildPopover(cache);
+      bindNotificationNavigation(pop);
+      loaded=true; bindMarks();
+    }
+    function bindMarks(){
+      pop.querySelectorAll('.notif-mark').forEach(btn=>{
+        btn.addEventListener('click', async ev=>{
+          ev.stopPropagation();
+          const li=btn.closest('.notif-item'); if(!li) return; const id=li.dataset.id; btn.disabled=true;
+          try{
+            await fetch(`https://stack4us.up.railway.app/api/notifications/${id}`, {method:'PATCH', headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` }});
+            li.classList.remove('unread'); btn.remove();
+            cache=cache.map(n=> n.notification_id==id? {...n, status:'read'}:n);
+            bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
+            bellIcon.src = cache.some(n=> n.status!=='read')? '/src/assets/img/mdi_bell-badge.png':'/src/assets/img/mdi_bell.png';
+          }catch{}
+        });
+      });
+    }
+    bellBtn.addEventListener('click', async ()=>{ open=!open; pop.classList.toggle('hidden', !open); if(open && !loaded){ await refresh(); } });
+    document.addEventListener('click', e=>{ if(!open) return; if(e.target.closest('#bellBtn')|| e.target.closest('#notifPopover')) return; open=false; pop.classList.add('hidden'); });
+    pop.addEventListener('click', e=>{ if(e.target.matches('[data-close]')){ open=false; pop.classList.add('hidden'); } });
+  }
+
   setupNavigation(pathname);
+  setupMobileMenu(pathname);
+  if(typeof setupMobileMenu.rebuild==='function') setupMobileMenu.rebuild(pathname);
 }
 
 document.body.addEventListener("click", (e) => {
@@ -140,7 +192,6 @@ document.body.addEventListener("click", (e) => {
     e.preventDefault();
     const path = e.target.getAttribute("href");
 
-    // Logout
     if (path === "/logout") {
       localStorage.setItem("Auth", "false");
       localStorage.removeItem("token");
@@ -150,11 +201,9 @@ document.body.addEventListener("click", (e) => {
       navigate("/login");
       return;
     }
-
     navigate(path);
   }
 
-  // Click en tarjeta usuario sidebar -> perfil
   const uc = e.target.closest('#sidebarUserCard');
   if (uc) {
     e.preventDefault();
@@ -162,21 +211,14 @@ document.body.addEventListener("click", (e) => {
   }
 });
 
-// Inicialización
 window.addEventListener("DOMContentLoaded", () => {
-  // si Auth quedó en true pero no hay token válido, forzar login
   if (localStorage.getItem("Auth") === "true" && !hasValidToken()) {
     localStorage.setItem("Auth", "false");
   }
-
   const path = window.location.pathname;
-  if (routes[path]) {
-    navigate(path);
-  } else {
-    if (!isAuth() || !hasValidToken()) navigate("/login");
-    else navigate("/dashboard");
+  if (routes[path]) navigate(path); else {
+    if (!isAuth() || !hasValidToken()) navigate("/login"); else navigate("/dashboard");
   }
 });
 
-// Recalcular el contenido del nav al redimensionar
 window.addEventListener("resize", () => setupNavigation(window.location.pathname));

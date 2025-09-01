@@ -2,12 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="./src/assets/img/eos-icons_machine-learning (1).png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./src/css/navbar.css">
     <link rel="stylesheet" href="./src/css/login.css">
     <link rel="stylesheet" href="./src/css/footer.css">
-    <link rel="stylesheet" href="./src/css/about.css"> 
+    <link rel="stylesheet" href="./src/css/about.css">
+    <link rel="stylesheet" href="./src/css/style.css">
     <title>Stack4Us</title>
   </head>
   <body>
@@ -17,10 +18,25 @@
           <img src="./src/assets/img/eos-icons_machine-learning (1).png" alt="Stack4Us logo">
           <h1>Stack4Us</h1>
         </div>
+        <button id="hamburgerBtn" class="hamburger-btn" aria-label="Abrir menú" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
         <div class="divider"></div>
         <ul id="navUl" class="nav-actions"></ul>
       </nav>
     </header>
+
+    <div id="mobileMenu" class="mobile-menu hidden" aria-hidden="true">
+      <div class="mobile-menu-backdrop" data-close="drawer"></div>
+      <aside class="mobile-menu-panel" role="dialog" aria-label="Menú">
+        <div class="mobile-menu-head">
+          <span class="mm-title">Menú</span>
+          <button class="mm-close" data-close="drawer" aria-label="Cerrar">×</button>
+        </div>
+        <nav id="mobileNavLinks" class="mobile-links" aria-label="Navegación móvil"></nav>
+        <div class="mobile-menu-footer" id="mobileMenuFooter"></div>
+      </aside>
+    </div>
 
     <main><div id="content"></div></main>
 
