@@ -2,7 +2,8 @@
 // Manages loading of posts, answers and conversations (replies to answers)
 // Real validation should happen in backend.
 
-const API_BASE = 'https://stack4us.up.railway.app';
+
+const API_BASE = (import.meta.env.VITE_API_BASE ?? 'https://stack4us.up.railway.app').replace(/\/$/, '');
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 let RATINGS_ENABLED = true; // se ajustará tras detección
 let USE_API_PREFIX = false;
