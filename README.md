@@ -1,47 +1,41 @@
-Project Overview
-Stack4Us is a collaborative platform designed to help beginner programmers overcome coding blocks efficiently. Instead of relying only on AI or spending excessive time reading long documentation, Stack4Us promotes teamwork, communication, and quick learning.
-Through Stack4Us, users can:
-Create tickets to describe their coding problems.
+📚 Stack4Us 
 
+🚀 Project Overview
 
-Add details such as error messages, code snippets, or screenshots.
+Stack4Us is a collaborative platform designed to help beginner programmers overcome coding blocks efficiently. Instead of relying only on AI or spending excessive time reading long documentation, Stack4Us promotes **teamwork, communication, and quick learning**.  
 
+Through Stack4Us, users can:  
+- Create tickets to describe their coding problems.  
+- Add details such as error messages, code snippets, or screenshots.  
+- Receive help and comments from other coders and team leaders.  
+- Filter issues by category and search faster.  
+- Strengthen collaboration and communication skills while learning.  
 
-Receive help and comments from other coders and team leaders.
+The project is focused on improving **learning speed, problem-solving, research, and peer-to-peer communication**.  
 
+---
 
-Filter issues by category and search faster.
+## 🛠️ Technologies Used
+- **Frontend**: Vite + JavaScript (SPA structure)  
+- **Backend**: Node.js + Express  
+- **Database**: Supabase (PostgreSQL + Auth + API)  
+- **Version Control**: Git & GitHub  
+- **Deployment**: Vercel  
 
+---
 
-Strengthen collaboration and communication skills while learning.
+## ⚙️ Installation & Execution
 
-
-The project is focused on improving learning speed, problem-solving, research, and peer-to-peer communication.
-
-🛠️ Technologies Used
-Frontend: Vite + JavaScript (SPA structure)
-
-
-Backend: Node.js + Express
-
-
-Database: Supabase (PostgreSQL + Auth + API)
-
-
-Version Control: Git & GitHub
-
-
-Deployment:  Vercel
-
-
-
- Installation & Execution
-🔹 1. Clone the Repository
+### 🔹 1. Clone the Repository
+```bash
 git clone https://github.com/Anderson030/Stack4Us.git
 cd stack4us
+---------------------------------------------------------------------
 
+###🔹 2. Database Configuration
 
-# Database configuration
+Set the following environment variables in your .env file:
+
 DB_HOST=aws-1-us-east-2.pooler.supabase.com
 DB_PORT=6543
 DB_NAME=postgres
@@ -55,38 +49,46 @@ CLOUDINARY_API_SECRET=fY7AK6JuiJvrfavaRaXKgO_1lAQ
 SUPABASE_URL=https://yztwayzwnkydeqwusbuo.supabase.co
 SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6dHdheXp3bmt5ZGVxd3VzYnVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTcxMjYyMywiZXhwIjoyMDcxMjg4NjIzfQ.iuS21FagqyaxarvwhCWTWpiU7o9SgK5FWXjO2JjuQ98
 
+
 🔹 3. Install and Run the Backend
+
 The backend uses Node.js + Express.
+
 cd backend
 npm install
 npm run dev
 
 By default, the backend runs on:
- 👉 http://localhost:3000
+👉 http://localhost:3000
 
 🔹 4. Install and Run the Frontend
+
 The frontend was built with Vite.
+
 cd frontend
 npm install
 npm run dev
 
 By default, the frontend runs on:
- 👉 http://localhost:5173
+👉 http://localhost:5173
 
 🔹 5. Credentials / Roles
+
 CODER → Can create tickets and comment.
 
+Team Credits
 
-👨‍💻 Team Credits
 This project was developed collaboratively by:
 
-
 Ana María Barragán
-Jackson Alberto Flores Pérez
-Daniel Ramírez Agudelo
-Jeferson Escudero Rua
-Anderson Blandon Álvarez
 
+Jackson Alberto Flores Pérez
+
+Daniel Ramírez Agudelo
+
+Jeferson Escudero Rua
+
+Anderson Blandon Álvarez
 
 Figma:
 
