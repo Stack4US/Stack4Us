@@ -1,4 +1,4 @@
-# 📚 Stack4Us – SOS for Blocked Coders
+# 📚 Stack4Us 
 
 ## 🚀 Project Overview
 Stack4Us is a collaborative platform designed to help beginner programmers overcome coding blocks efficiently. Instead of relying only on AI or spending excessive time reading long documentation, Stack4Us promotes **teamwork, communication, and quick learning**.  
