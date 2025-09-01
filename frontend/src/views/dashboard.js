@@ -4,6 +4,10 @@
 
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? 'https://stack4us.up.railway.app').replace(/\/$/, '');
+
+console.log('API_BASE runtime:', API_BASE);
+window.APP_DEBUG = { API_BASE }; // opcional para inspeccionar luego
+
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 let RATINGS_ENABLED = true; // se ajustará tras detección
 let USE_API_PREFIX = false;
