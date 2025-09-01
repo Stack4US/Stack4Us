@@ -72,21 +72,105 @@ By default, the frontend runs on:
 
 CODER → Can create tickets and comment.
 
+# 📖 Project Documentation (Unofficial)
+
+*(This documentation is not official, but it provides an overview of the project.)*
+
+---
+
+## 🏆 Epic
+As a user of **Stack4Us** (Coder, Team Leader, or Admin), I want to have a collaborative platform where I can publish my coding problems, receive help from other users, consult external documentation, and participate in a recognition system — in order to solve errors faster, learn, and improve my programming skills within a community.  
+
+---
+
+## 🎯 Project Scope (MVP – Initial Version)
+The **Stack4Us** project aims to be an interactive and specialized forum for students and programmers facing coding blocks.  
+
+The scope of the first version (MVP) includes:  
+
+### ✅ MVP Functionalities
+1. **User and Role Management**
+   - Roles: Coder, Team Leader (TL), Admin.  
+   - Registration and secure login.  
+
+2. **Publishing Coding Problems (Coders)**
+   - Create posts with title, description, programming language tag, and image upload.  
+   - Edit or delete own posts.  
+
+3. **Comment and Answer System**
+   - TL and Coders can comment on posts.  
+   - Answers can be rated with stars to highlight the most useful one.  
+
+4. **Stack Overflow Integration**
+   - Search and consult directly from Stack4Us without leaving the platform.  
+
+5. **Scoring and Weekly Ranking System**
+   - Recognize the most active and highest-rated users.  
+
+6. **Basic Notifications**
+   - Alerts when someone responds or rates a user’s post.  
+
+7. **Admin Panel**
+   - Moderate posts and users.  
+   - View general statistics and weekly reports.  
+   - Send global notifications to all users.  
+
+---
+
+## ⚡ Features / Functional Requirements – Stack4Us
+
+1. **User and Role Management**
+   - Registration and login.  
+   - Differentiated roles: Admin, Team Leader (TL), Coder.  
+   - Permissions based on the assigned role.  
+
+2. **Problem Posting (Coders)**
+   - Create posts with title, description, language tag, and image upload.  
+   - Edit or delete own posts.  
+
+3. **Comment and Answer System (Coders / TL)**
+   - Respond to posts with text and images.  
+   - Rate answers with a star rating system.  
+   - Automatically highlight the best-rated answer.  
+
+4. **Stack Overflow Integration**
+   - Search questions and answers directly within the platform without leaving Stack4Us.  
+
+5. **Scoring and Weekly Ranking System**
+   - Assign points based on interactions and ratings.  
+   - Automatic ranking that recognizes top contributors weekly.  
+
+6. **Real-Time Notifications**
+   - Alerts when a user receives responses, mentions, or ratings on their posts.  
+
+7. **Admin Panel (Admin)**
+   - Moderate posts and users.  
+   - Manage roles and permissions.  
+   - View statistics and generate weekly reports.  
+   - Send global notifications to all users.  
+
+8. **Advanced Search and Filters**
+   - Filter posts by title, keywords, tags, or programming language.
+
+     ----------------------------------------------------------
+
+
 
 👨‍💻 Team Credits
 
 This project was developed collaboratively by:
 
 Ana María Barragán
+
 Jackson Alberto Flores Pérez
+
 Daniel Ramírez Agudelo
+
 Jeferson Escudero Rua
+
 Anderson Blandon Álvarez
 
 
-Figma:
-
-https://www.figma.com/design/NlqOqgdcjezsK2jfubvexC/Untitled?node-id=86-117&t=qZ2sWN20qY2ohsnR-0
 
 
 
