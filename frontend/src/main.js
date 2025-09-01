@@ -187,6 +187,30 @@ export async function navigate(pathname) {
   if(typeof setupMobileMenu.rebuild==='function') setupMobileMenu.rebuild(pathname);
 }
 
+  // === Live user info refresh (desktop + mobile) ===
+  function refreshUserUI(){
+    const name = localStorage.getItem('user_name') || 'User';
+    let role = localStorage.getItem('role') || '';
+    if(role==='1') role='coder'; else if(role==='2') role='team_leader'; else if(role==='3') role='admin';
+    const avatar = localStorage.getItem('profile_image');
+    const nameEl = document.getElementById('navUserName');
+    const roleEl = document.getElementById('navUserRole');
+    const avatarEl = document.getElementById('sidebarAvatar');
+    if(nameEl) nameEl.textContent = name;
+    if(roleEl) roleEl.textContent = role || 'coder';
+    if(avatarEl){
+      if(avatar){
+        avatarEl.innerHTML = `<img src='${avatar}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
+      } else if(!avatarEl.textContent.trim()) {
+        avatarEl.textContent='👤';
+      }
+    }
+    // mobile menu (if open or will open later, rebuild its content)
+    if(typeof setupMobileMenu.rebuild==='function') setupMobileMenu.rebuild(window.location.pathname);
+  }
+  document.addEventListener('user:updated', refreshUserUI);
+  window.addEventListener('storage', (e)=>{ if(['user_name','role','profile_image'].includes(e.key)) refreshUserUI(); });
+
 document.body.addEventListener("click", (e) => {
   if (e.target.matches("[data-link]")) {
     e.preventDefault();
@@ -212,6 +236,15 @@ document.body.addEventListener("click", (e) => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
+  // Inject global theme if not present
+  if(!document.querySelector('link[data-global-theme]')){
+    const t=document.createElement('link');
+    t.rel='stylesheet';
+    t.href='/src/css/theme.css';
+    t.setAttribute('data-global-theme','1');
+    document.head.appendChild(t);
+  }
+  document.body.classList.add('theme-dark');
   if (localStorage.getItem("Auth") === "true" && !hasValidToken()) {
     localStorage.setItem("Auth", "false");
   }

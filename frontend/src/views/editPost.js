@@ -6,6 +6,14 @@ const API = 'https://stack4us.up.railway.app'; // match backend base //ablandoa
 function qs(id){ return document.getElementById(id); }
 
 export async function renderEditPostAfterTemplateLoaded(){
+  // Ensure CSS loaded
+  if(!document.querySelector('link[data-edit-post-css]')){
+    const l=document.createElement('link');
+    l.rel='stylesheet';
+    l.href='/src/css/edit-post.css';
+    l.setAttribute('data-edit-post-css','1');
+    document.head.appendChild(l);
+  }
   // Recover post data from sessionStorage (set by dashboard) //ablandoa
   const raw = sessionStorage.getItem('edit_post');
   if(!raw){
@@ -24,7 +32,7 @@ export async function renderEditPostAfterTemplateLoaded(){
   qs('ep_status').value = post.status || '';
   const imgWrap = qs('ep_current_image');
   if (post.image){
-    imgWrap.innerHTML = `<img src="${post.image}" alt="current" style="max-width:180px;border:1px solid #ddd;border-radius:6px" onerror="this.style.display='none'">`;
+    imgWrap.innerHTML = `<img src="${post.image}" alt="current" style="max-width:180px;border:1px solid #27313f;border-radius:10px" onerror="this.style.display='none'">`;
   } else {
     imgWrap.textContent = 'No current image';
   }
@@ -76,7 +84,7 @@ export async function renderEditPostAfterTemplateLoaded(){
       overrides[post.post_id] = { ...(overrides[post.post_id]||{}), ...changes };
       localStorage.setItem('post_overrides', JSON.stringify(overrides));
       hint.textContent = 'Guardado local';
-      setTimeout(()=>navigate('/dashboard'), 500);
+      setTimeout(()=>navigate('/dashboard'), 600);
     } catch(err){
       console.error(err);
       hint.textContent = 'Error guardando localmente';

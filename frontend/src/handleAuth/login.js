@@ -113,8 +113,25 @@ function login(url) {
         hasToken: !!localStorage.getItem('token')
       });
 
+      // Actualizar sidebar si ya está montada (caso login embebido o transición rápida)
+      try {
+        const nameEl = document.getElementById('navUserName');
+        const roleEl = document.getElementById('navUserRole');
+        const avatarEl = document.getElementById('sidebarAvatar');
+        if (nameEl) nameEl.textContent = localStorage.getItem('user_name') || 'User';
+        if (roleEl) roleEl.textContent = localStorage.getItem('role') || 'coder';
+        if (avatarEl && !avatarEl.querySelector('img')) {
+          const profileImage = localStorage.getItem('profile_image');
+            if (profileImage) {
+              avatarEl.innerHTML = `<img src='${profileImage}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
+            }
+        }
+      } catch (_) {}
+
       // navegar al dashboard
-      navigate('/dashboard');
+  // disparar evento global para que dashboard / navbar / mobile menu se actualicen si ya montados
+  document.dispatchEvent(new CustomEvent('user:updated', { detail: { source: 'login' }}));
+  navigate('/dashboard');
 
     } catch (err) {
       console.error('Login error:', err); // abl

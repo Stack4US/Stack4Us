@@ -1,6 +1,6 @@
 <div class="edit-post-shell">
   <h1>Edit Post</h1>
-  <form id="edit-post-form" class="card" enctype="multipart/form-data">
+  <form id="edit-post-form" class="card edit-post-form" enctype="multipart/form-data">
     <input type="hidden" name="post_id" id="ep_post_id" />
     <label>Title
       <input name="title" id="ep_title" placeholder="Title" />
@@ -28,9 +28,11 @@
     <label>Replace Image
       <input type="file" name="image" id="ep_image" accept="image/*" />
     </label>
-    <div id="ep_current_image" style="margin:8px 0"></div>
-    <button type="submit">Save Changes</button>
-    <button type="button" id="ep_cancel">Cancel</button>
-    <small id="ep_hint"></small>
+    <div id="ep_current_image" class="current-image"></div>
+    <div class="ep-actions">
+      <button type="submit">Save Changes</button>
+      <button type="button" id="ep_cancel">Cancel</button>
+      <small id="ep_hint"></small>
+    </div>
   </form>
 </div>

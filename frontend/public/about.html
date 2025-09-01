@@ -12,7 +12,7 @@
     <!-- Page-only styles -->
     <link rel="stylesheet" href="/about.css">
   </head>
-  <body>
+  <body class="theme-dark">
     <!-- ===== Header (same as login/register) ===== -->
     <header>
       <nav class="app-nav">
@@ -21,12 +21,33 @@
           <h1>Stack4Us</h1>
         </div>
         <div class="divider"></div>
+        <button class="hamburger-btn" id="aboutHamburger" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
         <ul class="nav-actions" id="navUl">
           <li><a class="active" href="/about.html">About</a></li>
           <li><a href="/register">Register</a></li>
           <li><a href="/login">Login</a></li>
         </ul>
       </nav>
+      <!-- Mobile drawer -->
+      <div class="mobile-menu hidden" id="aboutMobileMenu" aria-hidden="true">
+        <div class="mobile-menu-backdrop" data-close="mm"></div>
+        <div class="mobile-menu-panel">
+          <div class="mobile-menu-head">
+            <span class="mm-title">Stack4Us</span>
+            <button class="mm-close" data-close="mm" aria-label="Close">×</button>
+          </div>
+          <ul class="mobile-links" id="mobileNavLinks">
+            <li><a class="active" href="/about.html">About</a></li>
+            <li><a href="/register">Register</a></li>
+            <li><a href="/login">Login</a></li>
+          </ul>
+          <div class="mobile-menu-footer">
+            <a id="close-sesion" href="/login">Login</a>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- ===== Content ===== -->
@@ -38,93 +59,92 @@
         </p>
       </section>
 
-      <!-- ===== Carousel ===== -->
-      <section class="carousel-container">
-        <!-- Arrows -->
+      <!-- ===== Desktop Carousel (visible >= 900px) ===== -->
+      <section class="carousel-container desktop-only" aria-label="Stack4Us information slider">
         <button class="carousel-arrow prev" aria-label="Previous slide">‹</button>
         <button class="carousel-arrow next" aria-label="Next slide">›</button>
-
-        <!-- Track -->
         <div class="carousel-track" id="aboutTrack">
-          <!-- Card 1 -->
-          <article class="card">
-            <h2>Purpose</h2>
-            <p>
-              Provide a space where developers can post code issues, discuss solutions,
-              and view documentation without leaving the platform.
-            </p>
-          </article>
+          <article class="card"><h2>Purpose</h2><p>Provide a space where developers can post code issues, discuss solutions, and view documentation without leaving the platform.</p></article>
+          <article class="card"><h2>Differential Value</h2><ul><li>Less dependence on AI, more <em>peer learning</em>.</li><li>Concise docs — no endless manuals.</li><li>Better communication between clans at Riwi.</li><li>Tools for Team Leaders to guide clearly.</li></ul></article>
+          <article class="card"><h2>Roles</h2><div class="mini-grid"><div class="mini-card"><h3>Coder</h3><p>Post problems, reply, and rate solutions.</p></div><div class="mini-card"><h3>Team Leader</h3><p>Verify answers, tag, prioritize, and provide pedagogical guidance.</p></div><div class="mini-card"><h3>Admin</h3><p>Moderate content, manage users, and oversee reports.</p></div></div></article>
+          <article class="card"><h2>Use Case — Post and Resolve a Problem</h2><h3>Actors</h3><ul><li><strong>Primary:</strong> Coder</li><li><strong>Secondary:</strong> Team Leader, Community</li></ul><h3>Main Flow</h3><ol><li>The coder creates a post describing the problem.</li><li>Team Leaders and coders reply with suggestions.</li><li>The author marks the best answer.</li><li>The system updates ranking and sends notifications.</li></ol></article>
+          <article class="card"><h2>Features</h2><ul><li>Code editor with quick feedback.</li><li>Community-driven Q&amp;A.</li><li>Tag-based filtering.</li><li>Multi-language support.</li></ul></article>
+          <article class="card"><h2>Future Vision</h2><p>We aim to scale Stack4Us into a global hub with AI-assisted moderation, cross-school collaboration, and learning analytics.</p></article>
+        </div>
+        <div class="carousel-dots" id="aboutDots" aria-label="Carousel pagination"></div>
+      </section>
 
-          <!-- Card 2 -->
-          <article class="card">
-            <h2>Differential Value</h2>
-            <ul>
-              <li>Less dependence on AI, more <em>peer learning</em>.</li>
-              <li>Concise docs — no endless manuals.</li>
-              <li>Better communication between clans at Riwi.</li>
-              <li>Tools for Team Leaders to guide clearly.</li>
-            </ul>
-          </article>
+      <!-- ===== Mobile / Tablet Static Grid (< 900px) ===== -->
+      <section class="about-cards-grid mobile-only" aria-label="Stack4Us information blocks">
+        <article class="card">
+          <h2>Purpose</h2>
+          <p>
+            Provide a space where developers can post code issues, discuss solutions,
+            and view documentation without leaving the platform.
+          </p>
+        </article>
 
-          <!-- Card 3 -->
-          <article class="card">
-            <h2>Roles</h2>
-            <div class="mini-grid">
-              <div class="mini-card">
-                <h3>Coder</h3>
-                <p>Post problems, reply, and rate solutions.</p>
-              </div>
-              <div class="mini-card">
-                <h3>Team Leader</h3>
-                <p>Verify answers, tag, prioritize, and provide pedagogical guidance.</p>
-              </div>
-              <div class="mini-card">
-                <h3>Admin</h3>
-                <p>Moderate content, manage users, and oversee reports.</p>
-              </div>
+        <article class="card">
+          <h2>Differential Value</h2>
+          <ul>
+            <li>Less dependence on AI, more <em>peer learning</em>.</li>
+            <li>Concise docs — no endless manuals.</li>
+            <li>Better communication between clans at Riwi.</li>
+            <li>Tools for Team Leaders to guide clearly.</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Roles</h2>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <h3>Coder</h3>
+              <p>Post problems, reply, and rate solutions.</p>
             </div>
-          </article>
+            <div class="mini-card">
+              <h3>Team Leader</h3>
+              <p>Verify answers, tag, prioritize, and provide pedagogical guidance.</p>
+            </div>
+            <div class="mini-card">
+              <h3>Admin</h3>
+              <p>Moderate content, manage users, and oversee reports.</p>
+            </div>
+          </div>
+        </article>
 
-          <!-- Card 4 -->
-          <article class="card">
-            <h2>Use Case — Post and Resolve a Problem</h2>
-            <h3>Actors</h3>
+        <article class="card">
+          <h2>Use Case — Post and Resolve a Problem</h2>
+          <h3>Actors</h3>
             <ul>
               <li><strong>Primary:</strong> Coder</li>
               <li><strong>Secondary:</strong> Team Leader, Community</li>
             </ul>
-            <h3>Main Flow</h3>
-            <ol>
-              <li>The coder creates a post describing the problem.</li>
-              <li>Team Leaders and coders reply with suggestions.</li>
-              <li>The author marks the best answer.</li>
-              <li>The system updates ranking and sends notifications.</li>
-            </ol>
-          </article>
+          <h3>Main Flow</h3>
+          <ol>
+            <li>The coder creates a post describing the problem.</li>
+            <li>Team Leaders and coders reply with suggestions.</li>
+            <li>The author marks the best answer.</li>
+            <li>The system updates ranking and sends notifications.</li>
+          </ol>
+        </article>
 
-          <!-- Card 5 -->
-          <article class="card">
-            <h2>Features</h2>
-            <ul>
-              <li>Code editor with quick feedback.</li>
-              <li>Community-driven Q&amp;A.</li>
-              <li>Tag-based filtering.</li>
-              <li>Multi-language support.</li>
-            </ul>
-          </article>
+        <article class="card">
+          <h2>Features</h2>
+          <ul>
+            <li>Code editor with quick feedback.</li>
+            <li>Community-driven Q&amp;A.</li>
+            <li>Tag-based filtering.</li>
+            <li>Multi-language support.</li>
+          </ul>
+        </article>
 
-          <!-- Card 6 -->
-          <article class="card">
-            <h2>Future Vision</h2>
-            <p>
-              We aim to scale Stack4Us into a global hub with AI-assisted moderation,
-              cross-school collaboration, and learning analytics.
-            </p>
-          </article>
-        </div>
-
-        <!-- Dots -->
-        <div class="carousel-dots" id="aboutDots" aria-label="Carousel pagination"></div>
+        <article class="card">
+          <h2>Future Vision</h2>
+          <p>
+            We aim to scale Stack4Us into a global hub with AI-assisted moderation,
+            cross-school collaboration, and learning analytics.
+          </p>
+        </article>
       </section>
     </main>
 
@@ -132,76 +152,46 @@
       <p>All rights reserved | © 2025 Stack4Us | <a href="https://github.com/Stack4Us">Github</a></p>
     </footer>
 
-    <!-- ===== Carousel script (autoplay + arrows + dots) ===== -->
     <script>
-      (function () {
-        const track = document.getElementById('aboutTrack');
-        const dotsWrap = document.getElementById('aboutDots');
-        const prevBtn = document.querySelector('.carousel-arrow.prev');
-        const nextBtn = document.querySelector('.carousel-arrow.next');
-        if (!track || !dotsWrap || !prevBtn || !nextBtn) return;
+      // Desktop carousel only if viewport >= 900px
+      (function(){
+        function initCarousel(){
+          const minWidthMatch = window.matchMedia('(min-width:1024px)');
+          if(!minWidthMatch.matches) return; // only desktop
+          const track=document.getElementById('aboutTrack');
+          const dotsWrap=document.getElementById('aboutDots');
+          const prevBtn=document.querySelector('.carousel-arrow.prev');
+          const nextBtn=document.querySelector('.carousel-arrow.next');
+          if(!track||!dotsWrap||!prevBtn||!nextBtn) return;
+          const cards=[...track.querySelectorAll('.card')];
+          if(!cards.length) return;
+          const positionFor=i=>{ const c=cards[i]; if(!c) return 0; const pad=parseInt(getComputedStyle(track).paddingLeft||0); return c.offsetLeft - pad - (track.clientWidth - c.clientWidth)/2; };
+          dotsWrap.innerHTML=cards.map((_,i)=>`<button aria-label="Go to slide ${i+1}"></button>`).join('');
+          const dots=[...dotsWrap.querySelectorAll('button')];
+          let index=0; let timer=null; const INTERVAL=4000;
+          const setActive=i=>dots.forEach((d,k)=>d.classList.toggle('active',k===i));
+          const goTo=i=>{ index=(i+cards.length)%cards.length; track.scrollTo({left:positionFor(index),behavior:'smooth'}); setActive(index); };
+          const next=()=>goTo(index+1); const prev=()=>goTo(index-1);
+          const start=()=>{ if(!timer) timer=setInterval(next,INTERVAL); }; const stop=()=>{ clearInterval(timer); timer=null; };
+          nextBtn.addEventListener('click',()=>{ stop(); next(); start(); });
+          prevBtn.addEventListener('click',()=>{ stop(); prev(); start(); });
+          dots.forEach((dot,i)=> dot.addEventListener('click',()=>{ stop(); goTo(i); start(); }));
+          window.addEventListener('resize',()=>{ if(minWidthMatch.matches) goTo(index); });
+          setActive(0); goTo(0); start();
+        }
+        initCarousel();
+      })();
 
-        const cards = [...track.querySelectorAll('.card')];
-        if (!cards.length) return;
-
-        // center position for a given index
-        const positionFor = (idx) => {
-          const card = cards[idx];
-          const padLeft = parseInt(getComputedStyle(track).paddingLeft || 0);
-          const center = card.offsetLeft - padLeft - (track.clientWidth - card.clientWidth) / 2;
-          return Math.max(0, center);
-        };
-
-        // build dots
-        dotsWrap.innerHTML = cards.map((_, i) => `<button aria-label="Go to slide ${i+1}"></button>`).join('');
-        const dots = [...dotsWrap.querySelectorAll('button')];
-
-        let index = 0;
-        let timer = null;
-        const INTERVAL = 3000;
-
-        const setActiveDot = (i) => dots.forEach((d, k) => d.classList.toggle('active', k === i));
-        const goTo = (i) => {
-          index = (i + cards.length) % cards.length;
-          track.scrollTo({ left: positionFor(index), behavior: 'smooth' });
-          setActiveDot(index);
-        };
-        const next = () => goTo(index + 1);
-        const prev = () => goTo(index - 1);
-
-        const start = () => { if (!timer) timer = setInterval(next, INTERVAL); };
-        const stop  = () => { clearInterval(timer); timer = null; };
-
-        nextBtn.addEventListener('click', () => { stop(); next(); start(); });
-        prevBtn.addEventListener('click', () => { stop(); prev(); start(); });
-        dots.forEach((dot, i) => dot.addEventListener('click', () => { stop(); goTo(i); start(); }));
-
-        // snap to nearest on manual scroll
-        let scrollDebounce;
-        track.addEventListener('scroll', () => {
-          clearTimeout(scrollDebounce);
-          scrollDebounce = setTimeout(() => {
-            const mid = track.scrollLeft + track.clientWidth / 2;
-            const nearest = cards.reduce((best, el, i) => {
-              const center = el.offsetLeft + el.clientWidth / 2;
-              const dist = Math.abs(center - mid);
-              return dist < best.dist ? { i, dist } : best;
-            }, { i: index, dist: Infinity }).i;
-            index = nearest;
-            setActiveDot(index);
-          }, 120);
-        }, { passive: true });
-
-        // pause on hover/hidden tab
-        track.addEventListener('mouseenter', stop);
-        track.addEventListener('mouseleave', start);
-        document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
-        window.addEventListener('resize', () => goTo(index));
-
-        // init
-        setActiveDot(0);
-        goTo(0);
-        start();
+      // Mobile menu toggle for About page
+      (function(){
+        const btn = document.getElementById('aboutHamburger');
+        const menu = document.getElementById('aboutMobileMenu');
+        if(!btn || !menu) return;
+        function open(){ menu.classList.remove('hidden'); menu.classList.add('open'); btn.classList.add('is-open'); btn.setAttribute('aria-expanded','true'); document.body.classList.add('menu-open'); }
+        function close(){ menu.classList.add('hidden'); menu.classList.remove('open'); btn.classList.remove('is-open'); btn.setAttribute('aria-expanded','false'); document.body.classList.remove('menu-open'); }
+        btn.addEventListener('click', ()=> menu.classList.contains('hidden') ? open() : close());
+        menu.addEventListener('click', e=> { if(e.target.dataset.close==='mm') close(); });
+        window.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
       })();
     </script>
   </body>

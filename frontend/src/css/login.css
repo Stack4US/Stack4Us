@@ -15,8 +15,11 @@
     /* Typography */
     font-family: "Poppins", sans-serif;
     /* Visual */
-    border-radius: 10px;
-    box-shadow: 1px 1px 5px 1px rgba(0,0,0,0.1);
+    border-radius: 16px;
+    background: var(--color-surface, #1b222c);
+    border: 1px solid var(--color-border, #2a2f37);
+    box-shadow: 0 8px 28px -8px rgba(0, 0, 0, .55);
+    color: var(--color-text, #111);
 }
 .form_login .title_form {
     display: flex;
@@ -28,34 +31,59 @@
 
 .title_form h1 {
     font-size: 18px;
-    font-weight: bold;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--color-accent, #5E67CD), var(--color-accent-alt, #8b5cf6));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: .5px;
 }
 
 .title_form p {
     margin-top: 15px;
     font-size: 15px;
+    color: var(--color-text-dim, #666);
 }
 
 .form_login label {
     margin: 10px 0;
     font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-dim, #555);
 }
 
 .form_login input {
     padding: 16px;
-    border: none;
+    border: 1px solid var(--color-border, #444);
     border-radius: 10px;
-    background:#E4E4E4;
+    background: #11161e;
+    color: var(--color-text, #222);
+    font: inherit;
+    transition: .25s border-color, .25s background;
+}
+
+.form_login input:focus {
+    outline: none;
+    border-color: var(--color-accent, #5E67CD);
+    background: #0f141b;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, .28);
 }
 
 .form_login button {
-    margin-top:20px;
-    padding:16px;
-    border:none;
-    border-radius:10px;
-    background:#5E67CD;
-    color:#fff;
-    font-size:16px;
+    margin-top: 20px;
+    padding: 16px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--color-accent, #5E67CD), var(--color-accent-alt, #8b5cf6));
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .25s filter;
+}
+
+.form_login button:hover {
+    filter: brightness(1.08);
 }
 
 .footer_form {
@@ -65,14 +93,20 @@
 
 .footer_form p {
     font-size: 14px;
+    color: var(--color-text-dim, #666);
 }
 
 .footer_form a {
-    color: #5E67CD;
+    color: var(--color-accent, #5E67CD);
     text-decoration: none;
+    font-weight: 500;
 }
 
-@media (min-width:600px){
+.footer_form a:hover {
+    color: var(--color-accent-alt, #8b5cf6);
+}
+
+@media (min-width: 600px) {
     .form_login {
         max-width: 500px;
         margin: 40px auto;

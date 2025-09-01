@@ -45,21 +45,36 @@
         <!-- Create post -->
         <form id="post-form" class="card" style="margin:12px 0">
           <div class="post-grid">
-            <input name="title" placeholder="Title" required />
-            <select name="type">
-              <option value="javascript">Javascript</option>
-              <option value="react">React</option>
-              <option value="node">Node</option>
-              <option value="bug">Bug</option>
-              <option value="other">Other</option>
-            </select>
+            <!-- Fancy Title field with floating label -->
+            <div class="title-field">
+              <input id="post-title" name="title" type="text" placeholder=" " required autocomplete="off" />
+              <label for="post-title">Title</label>
+              <span class="tf-accent-ring" aria-hidden="true"></span>
+            </div>
+            <!-- Custom fancy select: Type -->
+            <div class="fancy-select" data-fancy-select="type">
+              <input type="hidden" name="type" value="javascript" />
+              <button type="button" class="fs-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select type">Javascript</button>
+              <ul class="fs-options" role="listbox">
+                <li data-value="javascript" class="selected" role="option" aria-selected="true">Javascript</li>
+                <li data-value="react" role="option">React</li>
+                <li data-value="node" role="option">Node</li>
+                <li data-value="bug" role="option">Bug</li>
+                <li data-value="other" role="option">Other</li>
+              </ul>
+            </div>
 
             <textarea name="description" placeholder="Describe the issue…" rows="3" required></textarea>
 
-            <select name="status">
-              <option value="unsolved">Unsolved</option>
-              <option value="solved">Solved</option>
-            </select>
+            <!-- Custom fancy select: Status -->
+            <div class="fancy-select" data-fancy-select="status">
+              <input type="hidden" name="status" value="unsolved" />
+              <button type="button" class="fs-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select status">Unsolved</button>
+              <ul class="fs-options" role="listbox">
+                <li data-value="unsolved" class="selected" role="option" aria-selected="true">Unsolved</li>
+                <li data-value="solved" role="option">Solved</li>
+              </ul>
+            </div>
 
             <input type="file" name="image" accept="image/*" />
             <input type="hidden" name="user_id" value="1" />

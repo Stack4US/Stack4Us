@@ -321,6 +321,52 @@ export async function renderDashboardAfterTemplateLoaded(){
 
   await detectBackendStyle();
 
+  // ==== Sidebar user card population ====
+  function fillSidebarUser(){
+    const nameEl=document.getElementById('navUserName');
+    const roleEl=document.getElementById('navUserRole');
+    const avatarEl=document.getElementById('sidebarAvatar');
+    const uid = Number(localStorage.getItem('user_id'));
+    let role = localStorage.getItem('role')||'';
+    if(role==='1') role='coder'; else if(role==='2') role='team_leader'; else if(role==='3') role='admin';
+    const cachedRaw = localStorage.getItem('user_profile');
+    let cached; try{ cached=JSON.parse(cachedRaw||'null'); }catch{}
+    const fallbackName = localStorage.getItem('user_name') || (cached?.user_name) || 'User';
+    if(nameEl) nameEl.textContent = fallbackName;
+    if(roleEl) roleEl.textContent = role ? role : 'role';
+    const img = (cached?.profile_image) || localStorage.getItem('profile_image');
+    if(avatarEl){
+      if(img){
+        avatarEl.innerHTML = '';
+        avatarEl.style.background='transparent';
+        avatarEl.style.padding='0';
+        avatarEl.classList.add('has-img');
+        avatarEl.innerHTML = `<img src='${img}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
+      } else {
+        avatarEl.textContent='👤';
+      }
+    }
+    // fetch fresh if not cached full profile
+    if(!cached || !cached.profile_image){
+      // best effort: if usersMap already loaded after loadUsers, will update again
+      (async ()=>{
+        try{
+          const r=await apiFetch(ENDPOINTS.listUsers); if(!r.ok) return; const list=await r.json();
+          const me=list.find(u=>Number(u.user_id)===uid);
+          if(me){
+            localStorage.setItem('user_profile', JSON.stringify(me));
+            if(me.user_name && nameEl) nameEl.textContent=me.user_name;
+            if(me.profile_image && avatarEl){
+              avatarEl.innerHTML=`<img src='${me.profile_image}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
+            }
+          }
+        }catch{}
+      })();
+    }
+  }
+  fillSidebarUser();
+  document.addEventListener('user:updated', fillSidebarUser);
+
   const qEl=document.getElementById('questions-count');
   const aEl=document.getElementById('answers-count');
   const pEl=document.getElementById('points-count');
@@ -358,6 +404,8 @@ export async function renderDashboardAfterTemplateLoaded(){
   }
 
   if(form){
+  // Enhance fancy select components
+  initFancySelects(form);
     form.addEventListener('submit', async e=>{
       e.preventDefault();
       if(hint) hint.textContent='Publishing…';
@@ -709,6 +757,60 @@ function setupSOFab() {
   if (fab.dataset.bound === '1') return;
   fab.addEventListener('click', openSOFinderModal);
   fab.dataset.bound = '1';
+}
+
+// ============ Fancy Select (custom dropdown) ============
+function initFancySelects(root){
+  const selects = Array.from(root.querySelectorAll('.fancy-select'));
+  if(!selects.length) return;
+  function closeAll(except){
+    selects.forEach(s=>{ if(s!==except){ s.classList.remove('open'); const btn=s.querySelector('.fs-trigger'); if(btn) btn.setAttribute('aria-expanded','false'); }});
+  }
+  selects.forEach(wrap=>{
+    const btn = wrap.querySelector('.fs-trigger');
+    const list = wrap.querySelector('.fs-options');
+    const hidden = wrap.querySelector('input[type=hidden]');
+    if(!btn || !list || !hidden) return;
+    btn.addEventListener('click', e=>{
+      const isOpen = wrap.classList.contains('open');
+      if(isOpen){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+      else { closeAll(wrap); wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); positionList(wrap); }
+    });
+    list.addEventListener('click', e=>{
+      const li=e.target.closest('li[data-value]'); if(!li) return;
+      const val=li.dataset.value; const label=li.textContent.trim();
+      hidden.value=val; btn.textContent=label; list.querySelectorAll('li').forEach(n=>{ n.classList.toggle('selected', n===li); n.removeAttribute('aria-selected'); });
+      li.setAttribute('aria-selected','true'); wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.focus();
+    });
+    // keyboard navigation
+    btn.addEventListener('keydown', e=>{
+      if(['ArrowDown','Enter',' '].includes(e.key)){ e.preventDefault(); if(!wrap.classList.contains('open')){ btn.click(); } else { focusFirst(); } }
+      if(e.key==='ArrowUp'){ e.preventDefault(); btn.click(); }
+    });
+    function focusFirst(){ const first=list.querySelector('li'); if(first){ first.focus?.(); } }
+    list.addEventListener('keydown', e=>{
+      const items=Array.from(list.querySelectorAll('li'));
+      const current=document.activeElement.closest('li');
+      let idx=items.indexOf(current);
+      if(e.key==='ArrowDown'){ e.preventDefault(); idx=Math.min(items.length-1, idx+1); items[idx].focus?.(); }
+      if(e.key==='ArrowUp'){ e.preventDefault(); idx=Math.max(0, idx-1); items[idx].focus?.(); }
+      if(e.key==='Home'){ e.preventDefault(); items[0].focus?.(); }
+      if(e.key==='End'){ e.preventDefault(); items[items.length-1].focus?.(); }
+      if(e.key==='Escape'){ e.preventDefault(); wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); btn.focus(); }
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); current?.click(); }
+    });
+    // roles & tabindex for items
+    list.querySelectorAll('li').forEach(li=>{ li.setAttribute('tabindex','-1'); });
+  });
+  document.addEventListener('click', e=>{ if(!e.target.closest('.fancy-select')) closeAll(); });
+  window.addEventListener('resize', ()=> selects.forEach(positionList));
+  function positionList(wrap){
+    const list=wrap.querySelector('.fs-options'); const btn=wrap.querySelector('.fs-trigger'); if(!list||!btn) return;
+    list.style.top='100%'; list.style.bottom='auto'; list.style.maxHeight='270px';
+    const rect=list.getBoundingClientRect(); const vh=window.innerHeight; if(rect.bottom>vh-12){
+      list.style.top='auto'; list.style.bottom=`calc(100% + 4px)`; const r2=list.getBoundingClientRect(); if(r2.top<8){ list.style.maxHeight=`${rect.height - (8-r2.top)}px`; }
+    }
+  }
 }
 
 // Carga de resultados y binding dentro del modal
