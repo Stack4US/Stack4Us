@@ -156,10 +156,11 @@ function postCard(post, answersByPost, convByAnswer){
   const avatar = userAvatar(post.user_id);
 
   // imagen
-  const hasImg = !!(post.image && String(post.image).trim());
+  const hasImg = !!(post.image && String(post.image).trim() && !/^data:\/\w+/i.test(post.image) ? post.image : post.image);
+  // Mostrar contenedor solo si hay una URL/imagen válida; de lo contrario nada
   const imageBox = hasImg
     ? `<div class="post-image-box" data-full="${post.image}"><img src="${post.image}" alt="post image" onerror="this.parentNode.classList.add('is-error');this.remove();"></div>`
-    : `<div class="post-image-box is-empty">IMG</div>`;
+    : '';
 
   // answers + conversaciones
   const answers = answersByPost.get(post.post_id)||[];
@@ -203,7 +204,7 @@ function postCard(post, answersByPost, convByAnswer){
     </div>`;
   }).join('')}</div>` : '';
 
-  return `<article class="card post-card" data-post="${post.post_id}">
+  return `<article class="card post-card" data-post="${post.post_id}" data-user="${post.user_id}">
     <h4>${escapeHtml(post.title || '')}</h4>
     <div class="post-meta">
       <span class="post-author">
@@ -387,25 +388,30 @@ export async function renderDashboardAfterTemplateLoaded(){
   async function loadAnswers(){ answersCache = await getJSON(`${API_BASE}${ENDPOINTS.listAnswers}`); if(aEl) aEl.textContent=answersCache.length; if(pEl) pEl.textContent=String(answersCache.length*10); }
   async function loadConversations(){ try{ conversationsCache = await getJSON(`${API_BASE}${ENDPOINTS.listConversations}`);}catch{ conversationsCache=[]; } }
   async function loadPosts(){
-    const posts = await getJSON(`${API_BASE}${ENDPOINTS.listPosts}`);
-    let overrides={}; try{ overrides=JSON.parse(localStorage.getItem('post_overrides')||'{}'); }catch{}
-    const merged = posts.map(p=> overrides[p.post_id]?{...p,...overrides[p.post_id]}:p);
+    // cache-busting query param to ensure we see remote changes immediately
+    const ts = Date.now();
+    const listUrl = `${API_BASE}${ENDPOINTS.listPosts}` + (ENDPOINTS.listPosts.includes('?')?`&_ts=${ts}`:`?_ts=${ts}`);
+    const posts = await getJSON(listUrl);
     if(qEl) qEl.textContent=posts.length;
     const answersByPost = groupAnswers(answersCache);
     const convByAnswer = groupConversations(conversationsCache);
     if(postsEl){
-      postsEl.innerHTML = merged.length
-        ? merged.slice().reverse().map(p=>postCard(p,answersByPost,convByAnswer)).join('')
+      postsEl.innerHTML = posts.length
+        ? posts.slice().reverse().map(p=>postCard(p,answersByPost,convByAnswer)).join('')
         : '<div class="card" style="padding:10px">No posts.</div>';
       if(RATINGS_ENABLED) injectRatingsUI(postsEl, answersCache);
       attachImageLightboxHandlers();
-      // re-open previously expanded posts
       expandedPosts.forEach(pid=>{
         const section = postsEl.querySelector(`.answers-section[data-post='${pid}']`);
         const toggle = postsEl.querySelector(`.answers-toggle[data-post='${pid}']`);
         if(section){ section.removeAttribute('hidden'); if(toggle){ const c=toggle.dataset.count||'0'; toggle.textContent=`Hide answers (${c})`; } }
       });
     }
+  }
+  if(sessionStorage.getItem('force_reload_posts')==='1'){
+    sessionStorage.removeItem('force_reload_posts');
+    // slight delay to ensure previous paint finished
+    setTimeout(()=>loadPosts(),150);
   }
 
   if(form){
@@ -466,7 +472,9 @@ export async function renderDashboardAfterTemplateLoaded(){
         const type=typeMatch?typeMatch[1].trim().replace(/\.$/,''):'';
         const status=statusMatch?statusMatch[1].trim().replace(/\.$/,''):'';
         const image=article.querySelector('.post-image-box img')?.getAttribute('src')||'';
-        const postData={post_id:postId,title,description:desc,type,status,image};
+  // capture user_id from dataset (added in postCard) to allow ownership checks in edit view
+  const userId=article?.dataset?.user;
+  const postData={post_id:postId,title,description:desc,type,status,image,user_id:userId};
         sessionStorage.setItem('edit_post', JSON.stringify(postData));
         import('../main').then(m=>m.navigate('/edit-post'));
       }

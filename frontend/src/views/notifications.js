@@ -16,13 +16,11 @@ function escapeHtml(s){return String(s||'').replaceAll('&','&amp;').replaceAll('
 function enrichNotification(n){
   let msg = n.message||'';
   let postId = n.post_id || null;
-  if(!postId){
-    const m = msg.match(/\(ID:\s*(\d+)\)/i); if(m){ postId = m[1]; }
-  }
+  // Remove legacy (ID: n) suffix always
+  msg = msg.replace(/\s*\(ID:\s*\d+\)/ig,'');
   if(postId){
     const title = postsTitleMap[String(postId)];
     if(title){
-      msg = msg.replace(/\s*\(ID:\s*\d+\)/i,'');
       msg = msg.replace(/your post/i, `your post “${escapeHtml(title)}”`);
     }
   }
