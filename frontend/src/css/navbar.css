@@ -444,27 +444,17 @@ body.has-dashboard #content {
   max-height: 420px;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #dadce2);
-  border-radius: 10px;
-  box-shadow: 0 8px 28px -6px rgba(0,0,0,.45);
+  border-radius: 14px;
+  box-shadow: 0 14px 38px -10px rgba(0,0,0,.45);
   padding: 8px 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 400;
+  backdrop-filter: blur(18px) saturate(155%);
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
 }
-.notif-popover::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  right: 18px;
-  width: 12px;
-  height: 12px;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #dadce2);
-  border-bottom: none;
-  border-right: none;
-  transform: rotate(45deg);
-}
+.notif-popover::before { content:""; position:absolute; top:-6px; right:18px; width:12px; height:12px; background: var(--color-surface,#fff); border:1px solid var(--color-border,#dadce2); border-bottom:none; border-right:none; transform:rotate(45deg); box-shadow:0 4px 10px -4px rgba(0,0,0,.35); }
 .notif-popover-header {
   padding: 6px 14px 8px;
   font: 600 13px/1 system-ui, sans-serif;
@@ -531,6 +521,19 @@ body.has-dashboard #content {
   color: #555;
 }
 .close-pop:hover { color: #000; }
+
+/* ==== Dark theme adaptations for notifications ==== */
+body.theme-dark .notif-popover { background: rgba(29,37,48,.78); border:1px solid rgba(255,255,255,.08); box-shadow:0 18px 42px -14px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.05) inset; }
+body.theme-dark .notif-popover::before { background: rgba(29,37,48,.78); border-color: rgba(255,255,255,.08); }
+body.theme-dark .notif-popover-header { border-color: rgba(255,255,255,.08); color:#e2e8f0; }
+body.theme-dark .notif-list { scrollbar-width: thin; }
+body.theme-dark .notif-item { border-bottom:1px solid rgba(255,255,255,.05); color:#cfd8e3; }
+body.theme-dark .notif-item.unread { background: rgba(99,102,241,.18); box-shadow: 0 0 0 1px rgba(99,102,241,.35) inset; }
+body.theme-dark .notif-item time { color:#94a3b8; }
+body.theme-dark .notif-mark { color: var(--color-accent,#6366f1); }
+body.theme-dark .notif-mark:hover { background: rgba(99,102,241,.15); }
+body.theme-dark .close-pop { color:#9aa4b1; }
+body.theme-dark .close-pop:hover { color:#fff; }
 
 #navUl {
   flex-shrink: 1;

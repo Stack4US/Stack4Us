@@ -155,11 +155,15 @@ export async function navigate(pathname) {
   const bellBadge=document.getElementById('bellBadge');
   const pop=document.getElementById('notifPopover');
   if(bellBtn && pop){
-    let open=false; let loaded=false; let cache=[];
+    let open=false; let loaded=false; let cache=[]; let pollTimer=null;
+    function updateBellIcon(anyUnread){
+      if(!bellBadge||!bellIcon) return;
+      bellBadge.classList.toggle('hidden', !anyUnread);
+      bellIcon.src = anyUnread? '/img/mdi_bell-badge.png':'/img/mdi_bell.png';
+    }
     async function refresh(){
       try { cache=await fetchNotifications(); } catch { cache=[]; }
-      bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
-  bellIcon.src = cache.some(n=> n.status!=='read')? '/img/mdi_bell-badge.png':'/img/mdi_bell.png';
+      updateBellIcon(cache.some(n=> n.status!=='read'));
       pop.innerHTML = `<div class='notif-popover-header'><span>Notifications</span><button class='close-pop' data-close>x</button></div>` + buildPopover(cache);
       bindNotificationNavigation(pop);
       loaded=true; bindMarks();
@@ -173,13 +177,19 @@ export async function navigate(pathname) {
             await fetch(`https://stack4us.up.railway.app/api/notifications/${id}`, {method:'PATCH', headers:{ Authorization:`Bearer ${localStorage.getItem('token')}` }});
             li.classList.remove('unread'); btn.remove();
             cache=cache.map(n=> n.notification_id==id? {...n, status:'read'}:n);
-            bellBadge.classList.toggle('hidden', !cache.some(n=> n.status!=='read'));
-            bellIcon.src = cache.some(n=> n.status!=='read')? '/img/mdi_bell-badge.png':'/img/mdi_bell.png';
+            updateBellIcon(cache.some(n=> n.status!=='read'));
           }catch{}
         });
       });
     }
     bellBtn.addEventListener('click', async ()=>{ open=!open; pop.classList.toggle('hidden', !open); if(open && !loaded){ await refresh(); } });
+    // Start polling every 25s to reflect new notifications without click
+    async function startPolling(){
+      if(pollTimer) clearInterval(pollTimer);
+      await refresh();
+      pollTimer = setInterval(refresh, 25000);
+    }
+    startPolling();
     document.addEventListener('click', e=>{ if(!open) return; if(e.target.closest('#bellBtn')|| e.target.closest('#notifPopover')) return; open=false; pop.classList.add('hidden'); });
     pop.addEventListener('click', e=>{ if(e.target.matches('[data-close]')){ open=false; pop.classList.add('hidden'); } });
   }
