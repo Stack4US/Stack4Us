@@ -1,4 +1,4 @@
-#Stack4Us
+## Stack4Us
 
 Project overview
 
@@ -14,6 +14,8 @@ The frontend is a Single Page Application built with Vite and JavaScript.
 The backend is an API built with Node.js and Express.
 Data is stored in PostgreSQL using Supabase.
 The repository uses Git and GitHub. The project can be deployed to common services such as Vercel (frontend) and a node host for the API.
+
+you can see the project deployed in the following link: https://stack4-us-qakt.vercel.app/about.html 
 
 Installation and execution
 
