@@ -1,4 +1,5 @@
-Stack4Us
+#Stack4Us
+
 Project overview
 
 Stack4Us is a small web platform that helps beginner programmers unblock themselves faster. The main idea is to learn by working with other people. Instead of reading long documentation alone, a user can describe the problem, receive comments from the community, and choose the best answer. The project focuses on faster learning, better problem-solving, practical research, and simple communication between peers.
