@@ -1,8 +1,9 @@
 import pool from '../config/data_base_conection.js';
 import bcrypt from 'bcrypt';
 import { uploadImage } from './cloudinary.service.js';
-import { generateToken }   from '../middlewares/auth.middleware.js';
+import { generateToken } from '../middlewares/auth.middleware.js';
 
+// Create new user (password hashed + default role = 1)
 export async function createUser({ user_name, email, password }) {
     const roleToInsert = 1;
 
@@ -27,8 +28,8 @@ export async function createUser({ user_name, email, password }) {
     }
 }
 
+// Authenticate user and return JWT
 export async function authenticateUser(user_name, password) {
-
     try {
         const result = await pool.query(
             'SELECT * FROM users WHERE user_name = $1',
@@ -36,7 +37,7 @@ export async function authenticateUser(user_name, password) {
         );
 
         if (result.rows.length === 0) {
-            return null
+            return null;
         }
 
         const user = result.rows[0];
@@ -54,6 +55,7 @@ export async function authenticateUser(user_name, password) {
     }
 }
 
+// Get user by id (basic profile info)
 export async function getUserById(userId) {
     const uid = parseInt(userId, 10);
     if (!Number.isInteger(uid)) {
@@ -68,6 +70,7 @@ export async function getUserById(userId) {
     return result.rows[0] || null;
 }
 
+// Update user profile (optional description + profile image)
 export async function updateUser(user_id, { description }, file) {
     try {
         let profile_image = null;
@@ -80,7 +83,7 @@ export async function updateUser(user_id, { description }, file) {
         const result = await pool.query(
             `UPDATE users 
             SET profile_image = COALESCE($1, profile_image),
-                    description = COALESCE($2, description)
+                description = COALESCE($2, description)
             WHERE user_id = $3
             RETURNING user_id, user_name, email, rol_id, description, profile_image`,
             [profile_image, description, user_id]
@@ -93,6 +96,7 @@ export async function updateUser(user_id, { description }, file) {
     }
 }
 
+// Delete user by id
 export async function deleteUser(userId) {
   const id = Number(userId);
   if (Number.isNaN(id)) return null;
@@ -105,9 +109,10 @@ export async function deleteUser(userId) {
   return result.rows[0] || null;
 }
 
+// Get all users (admin view)
 export async function getAllUsers() {
     const result = await pool.query(
         'SELECT user_id, user_name, email, rol_id, description, profile_image FROM users'
     );
     return result.rows;
-} 
+}

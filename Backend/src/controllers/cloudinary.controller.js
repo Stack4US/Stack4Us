@@ -1,6 +1,6 @@
-
 import { uploadImage } from "../services/cloudinary.service.js";
 
+// Upload profile picture → folder "profile"
 export const uploadProfilePic = async (req, res) => {
   try {
     const result = await uploadImage(req.file.path, "profile");
@@ -10,6 +10,7 @@ export const uploadProfilePic = async (req, res) => {
   }
 };
 
+// Upload post picture → folder "posts"
 export const uploadPostPic = async (req, res) => {
   try {
     const result = await uploadImage(req.file.path, "posts");

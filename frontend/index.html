@@ -2,8 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- App favicon -->
     <link rel="icon" type="image/png" href="./src/assets/img/eos-icons_machine-learning (1).png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Global styles (navbar, auth pages, footer, about, base) -->
     <link rel="stylesheet" href="./src/css/navbar.css">
     <link rel="stylesheet" href="./src/css/login.css">
     <link rel="stylesheet" href="./src/css/footer.css">
@@ -12,20 +14,28 @@
     <title>Stack4Us</title>
   </head>
   <body>
+    <!-- Top navigation bar -->
     <header>
       <nav class="app-nav">
+        <!-- Brand (logo + title) -->
         <div class="brand">
           <img src="./src/assets/img/eos-icons_machine-learning (1).png" alt="Stack4Us logo">
           <h1>Stack4Us</h1>
         </div>
+
+        <!-- Mobile hamburger (opens drawer) -->
         <button id="hamburgerBtn" class="hamburger-btn" aria-label="Abrir menú" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
+
         <div class="divider"></div>
+
+        <!-- Dynamic nav items (built by main.js) -->
         <ul id="navUl" class="nav-actions"></ul>
       </nav>
     </header>
 
+    <!-- Mobile drawer menu (controlled by JS) -->
     <div id="mobileMenu" class="mobile-menu hidden" aria-hidden="true">
       <div class="mobile-menu-backdrop" data-close="drawer"></div>
       <aside class="mobile-menu-panel" role="dialog" aria-label="Menú">
@@ -33,16 +43,22 @@
           <span class="mm-title">Menú</span>
           <button class="mm-close" data-close="drawer" aria-label="Cerrar">×</button>
         </div>
+        <!-- Links injected by JS -->
         <nav id="mobileNavLinks" class="mobile-links" aria-label="Navegación móvil"></nav>
+        <!-- Footer actions (e.g., Logout) -->
         <div class="mobile-menu-footer" id="mobileMenuFooter"></div>
       </aside>
     </div>
 
+    <!-- SPA content area (templates are loaded here) -->
     <main><div id="content"></div></main>
 
+    <!-- Simple footer -->
     <footer>
       <p>All rights reserved | © 2025 Stack4Us | <a href="https://github.com/Stack4Us">Github</a></p>
     </footer>
+
+    <!-- Entry point (router + page logic) -->
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

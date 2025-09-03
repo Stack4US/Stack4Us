@@ -2,6 +2,7 @@ import pool from '../config/data_base_conection.js';
 import { uploadImage } from './cloudinary.service.js';
 import { createNotification } from './notifications.service.js';
 
+// Create new conversation (with optional image + notification)
 export async function createConversation(body, file) {
     const { description, user_id, answer_id } = body;
     const uid = parseInt(user_id, 10);
@@ -17,6 +18,7 @@ export async function createConversation(body, file) {
         throw new Error('A valid answer_id is required to create a conversation.');
     }
 
+    // Check if answer exists
     const answerExists = await pool.query(
         'SELECT answer_id, user_id FROM answer WHERE answer_id = $1',
         [aid]
@@ -27,6 +29,7 @@ export async function createConversation(body, file) {
 
     const answerOwnerId = answerExists.rows[0].user_id;
 
+    // Upload image if provided
     let imageUrl = null;
     if (file) {
         const b64 = file.buffer.toString("base64");
@@ -35,6 +38,7 @@ export async function createConversation(body, file) {
         imageUrl = uploadResult.secure_url;
     }
 
+    // Insert conversation
     const result = await pool.query(
         `INSERT INTO conversation (description, user_id, answer_id, image, date)
          VALUES ($1, $2, $3, $4, NOW())
@@ -43,6 +47,7 @@ export async function createConversation(body, file) {
     );
     const conversationInserted = result.rows[0];
 
+    // Notify answer owner
     if (answerOwnerId && answerOwnerId !== uid) {
         await createNotification({
             user_id: answerOwnerId,
@@ -53,6 +58,7 @@ export async function createConversation(body, file) {
     return conversationInserted;
 }
 
+// Get all conversations
 export async function getAllConversation() {
     const result = await pool.query(`
         SELECT conversation_id, user_id, answer_id, description
@@ -62,6 +68,7 @@ export async function getAllConversation() {
     return result.rows;
 }
 
+// Delete conversation (only owner or admin)
 export async function deleteConversation(conversation_id, user) {
     const cid = parseInt(conversation_id, 10);
     if (!cid || isNaN(cid)) {
@@ -82,6 +89,7 @@ export async function deleteConversation(conversation_id, user) {
     const reqUserId = parseInt(user.user_id, 10);
     const reqUserRole = parseInt(user.rol_id, 10);
 
+    // Check permission (owner or admin role)
     if (convUserId !== reqUserId && reqUserRole !== 2) {
         return { error: 'You do not have permission to delete this conversation.', status: 403 };
     }
@@ -94,6 +102,7 @@ export async function deleteConversation(conversation_id, user) {
     return { message: 'Conversation deleted successfully.' };
 }
 
+// Get conversations by user id
 export async function getUserConversations(user_id) {
     const uid = parseInt(user_id, 10);
     if (!Number.isInteger(uid)) {

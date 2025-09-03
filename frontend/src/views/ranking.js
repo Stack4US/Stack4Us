@@ -1,12 +1,14 @@
 const API = 'https://stack4us.up.railway.app/api';
 const DEFAULT_AVATAR = '/src/assets/img/qlementine-icons_user-16.png';
 
+// Small fetch helper: returns JSON or throws on !ok
 async function j(u, o) {
   const r = await fetch(u, o);
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
-// 
+
+// Render one ranking row (card with avatar, name, stats)
 function row(i, u) {
   const displayName = u.user_name || 'User';
   const avg = (u.avg_rating!=null)? (Math.round(u.avg_rating*10)/10).toFixed(1) : '-';
@@ -23,21 +25,32 @@ function row(i, u) {
     </div>`;
 }
 
+// Load ranking and render list (with fallback)
 export async function renderRankingAfterTemplateLoaded() {
   const list = document.getElementById('rankingList');
   try {
-    // Intentar ranking del backend (incluye nombre e imagen)
+    // Try backend ranking (includes name & image)
     const ranking = await j(`${API}/ratings/ranking`).catch(()=>null);
     if(ranking && Array.isArray(ranking) && ranking.length){
       list.innerHTML = ranking.map((u,i)=>row(i+1,u)).join('');
       return;
     }
-    // Fallback: contar respuestas (sin datos de rating)
+
+    // Fallback: build ranking by counting answers (no rating data)
     const answers = await j(`${API}/answers`);
     const counts = new Map();
     answers.forEach(a=> counts.set(a.user_id, (counts.get(a.user_id)||0)+1));
-    const arr = Array.from(counts.entries()).map(([user_id, answers_count])=>({user_id, answers_count})).sort((a,b)=> b.answers_count-a.answers_count).slice(0,10);
-    list.innerHTML = arr.length ? arr.map((u,i)=> row(i+1,{...u, avg_rating:null, ratings_count:null, answers_with_votes:u.answers_count})).join('') : `<div class="card" style="padding:10px">No ranking data.</div>`;
+
+    // Top 10 by answers count
+    const arr = Array.from(counts.entries())
+      .map(([user_id, answers_count])=>({user_id, answers_count}))
+      .sort((a,b)=> b.answers_count-a.answers_count)
+      .slice(0,10);
+
+    // Render rows or empty state
+    list.innerHTML = arr.length
+      ? arr.map((u,i)=> row(i+1,{...u, avg_rating:null, ratings_count:null, answers_with_votes:u.answers_count})).join('')
+      : `<div class="card" style="padding:10px">No ranking data.</div>`;
   } catch(err){
     console.error(err);
     list.innerHTML = `<div class="card" style="padding:10px">Error loading ranking.</div>`;

@@ -1,6 +1,7 @@
 import pool from '../config/data_base_conection.js';
 import { createNotification } from '../services/notifications.service.js';
 
+// Get avg rating and count per answer
 export async function getAnswersRatingsSummary() {
   const sql = `
     SELECT answer_id,
@@ -13,7 +14,7 @@ export async function getAnswersRatingsSummary() {
   return result.rows;
 }
 
-
+// Insert a rating and notify answer owner
 export async function insertRating({ user_id, answer_id, rating }) {
   const result = await pool.query(
     `INSERT INTO answer_ratings (user_id, answer_id, rating)
@@ -24,6 +25,7 @@ export async function insertRating({ user_id, answer_id, rating }) {
 
   const ratingInserted = result.rows[0];
 
+  // Find answer owner and send notification (if not same user)
   const answerOwnerRes = await pool.query(
     `SELECT user_id FROM answer WHERE answer_id = $1`,
     [answer_id]
@@ -43,6 +45,7 @@ export async function insertRating({ user_id, answer_id, rating }) {
   return ratingInserted;
 }
 
+// Get all ratings by current user
 export async function getMyRatings(userId) {
   const sql = `
     SELECT rating_id, answer_id, user_id, rating
@@ -53,6 +56,7 @@ export async function getMyRatings(userId) {
   return result.rows;
 }
 
+// Get summary for one user's answers
 export async function getUserRatingSummary(userId) {
   if (!Number.isInteger(userId)) throw new Error('Invalid user_id');
 
@@ -68,11 +72,13 @@ export async function getUserRatingSummary(userId) {
   `;
   const result = await pool.query(sql, [userId]);
   if (!result.rows.length) {
+    // No data → return zeros
     return { user_id: userId, avg_rating: 0, ratings_count: 0, answers_with_votes: 0 };
   }
   return result.rows[0];
 }
 
+// Get global ranking (minVotes, optional role, limit)
 export async function getRanking({ minVotes = 1, role = null, limit = 10 }) {
   let sql = `
     SELECT u.user_id,
@@ -90,10 +96,12 @@ export async function getRanking({ minVotes = 1, role = null, limit = 10 }) {
 
   const params = [];
   if (role) {
+    // Filter by role (if provided)
     sql += ` WHERE u.rol_id = $1`;
     params.push(role);
   }
 
+  // Only users with at least minVotes; order by quality and activity
   sql += `
     GROUP BY u.user_id
     HAVING COUNT(ar.rating) >= ${minVotes}

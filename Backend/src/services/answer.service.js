@@ -2,6 +2,7 @@ import pool from '../config/data_base_conection.js';
 import { uploadImage } from './cloudinary.service.js';
 import { createNotification } from './notifications.service.js';
 
+// Get all answers
 export async function getAllAnswers() {
     try {
         const result = await pool.query(`
@@ -13,6 +14,7 @@ export async function getAllAnswers() {
     }
 }
 
+// Create new answer (with optional image + notification)
 export async function createAnswer(body, file, user_id) {
     try {
         const { post_id, description } = body;
@@ -25,6 +27,7 @@ export async function createAnswer(body, file, user_id) {
         if (!Number.isInteger(pid)) throw new Error('Invalid post_id.');
         if (!Number.isInteger(uid)) throw new Error('Invalid authenticated user_id.');
 
+        // Check if post exists
         const postExists = await pool.query(
             'SELECT post_id, user_id FROM post WHERE post_id = $1',
             [pid]
@@ -34,6 +37,7 @@ export async function createAnswer(body, file, user_id) {
         }
         const postOwnerId = postExists.rows[0].user_id;
 
+        // Upload image if provided
         let imageUrl = null;
         if (file) {
             const b64 = file.buffer.toString("base64");
@@ -42,6 +46,7 @@ export async function createAnswer(body, file, user_id) {
             imageUrl = uploadResult.secure_url;
         }
 
+        // Insert answer
         const answerIns = await pool.query(
             `INSERT INTO answer (post_id, date, description, user_id, image)
              VALUES ($1, NOW(), $2, $3, $4)
@@ -50,7 +55,7 @@ export async function createAnswer(body, file, user_id) {
         );
         const newAnswer = answerIns.rows[0];
 
-        // notificación al dueño del post (si no es el mismo user)
+        // Send notification to post owner
         if (postOwnerId !== uid) {
             await createNotification({ 
                 user_id: postOwnerId,
@@ -65,6 +70,7 @@ export async function createAnswer(body, file, user_id) {
     }
 }
 
+// Delete answer (only owner or admin)
 export async function removeAnswer(answer_id, user) {
     try {
         const aid = parseInt(answer_id, 10);
@@ -90,6 +96,7 @@ export async function removeAnswer(answer_id, user) {
 
         const answerOwnerId = parseInt(answerRes.rows[0].user_id, 10);
 
+        // Check permission
         if (uid !== answerOwnerId && !isAdmin) {
             return { error: 'Unauthorized to delete this answer.', status: 403 };
         }
@@ -106,6 +113,7 @@ export async function removeAnswer(answer_id, user) {
     }
 }
 
+// Get answers by user id
 export async function getAnswersByUserId(user_id) {
     const uid = parseInt(user_id, 10);
     if (!Number.isInteger(uid)) {

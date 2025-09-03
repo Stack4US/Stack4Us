@@ -2,7 +2,7 @@ import axios from 'axios';
 export let loged = false;
 import { navigate } from '../main';
 
-// helper: un JWT válido debe tener 3 partes separadas por '.'
+// Helper: a valid JWT must have 3 parts separated by '.'
 function looksLikeJWT(t) {
   return typeof t === 'string' && t.trim().split('.').length === 3;
 }
@@ -11,17 +11,17 @@ function login(url) {
   const form = document.getElementById('form_login');
   if (!form) return;
 
-  // cache inputs once //ablandoa
-  const userInput = document.getElementById('name');        //ablandoa
-  const passInput = document.getElementById('password');    //ablandoa
-  const submitBtn = form.querySelector('button[type="submit"]'); //ablandoa
+  // Cache input elements
+  const userInput = document.getElementById('name');
+  const passInput = document.getElementById('password');
+  const submitBtn = form.querySelector('button[type="submit"]');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // read & normalize //ablandoa
-    const user_name = (userInput?.value || '').trim();      //ablandoa
-    const password  = (passInput?.value || '').trim();      //ablandoa
+    // Read form values
+    const user_name = (userInput?.value || '').trim();
+    const password  = (passInput?.value || '').trim();
 
     if (!user_name || !password) {
       alert('Please fill all fields');
@@ -31,24 +31,24 @@ function login(url) {
     const userData = { user_name, password };
 
     try {
-      // prevent double submit //ablandoa
-      if (submitBtn) submitBtn.disabled = true;             //ablandoa
+      // Prevent double submit
+      if (submitBtn) submitBtn.disabled = true;
 
-      const resp = await axios.post(`${url}/login`, userData); // url ya incluye /api/users
-      console.debug('[login] raw resp.data', resp.data);        // debug //ablandoa
+      // Send request to backend (/api/users/login)
+      const resp = await axios.post(`${url}/login`, userData);
+      console.debug('[login] raw resp.data', resp.data);
 
       loged = resp.status === 200 || resp.status === 201;
-
       if (!loged) {
         alert('Invalid username or password');
         return;
       }
 
-      // -------- procesar respuesta --------
+      // -------- Handle response --------
       const userFromResp = resp.data?.user || {};
       let token = resp.data?.token;
 
-      // Fallback: buscar cualquier string con formato JWT dentro del objeto respuesta //ablandoa
+      // Fallback: search JWT anywhere in response if not in token field
       if (!looksLikeJWT(token)) {
         let found = null;
         const walk = (obj) => {
@@ -59,28 +59,28 @@ function login(url) {
         };
         try { walk(resp.data); } catch(_) {}
         token = found || null;
-        if (token) console.debug('[login] token fallback encontrado', token.slice(0,25)+'...');
+        if (token) console.debug('[login] token fallback found', token.slice(0,25)+'...');
       }
 
+      // Validate token format
       if (!looksLikeJWT(token)) {
-        console.warn('[login] No valid JWT received (avoid storing token).');
+        console.warn('[login] No valid JWT received.');
         alert('A valid token was not received. Try again.');
-        // asegurar estado "no autenticado"
         localStorage.setItem('Auth', 'false');
         localStorage.removeItem('token');
         return;
       }
 
-      // Guardar token y marcar sesión
+      // Save token and auth flag
       localStorage.setItem('token', token.trim());
       localStorage.setItem('Auth', 'true');
 
-      // Intentar extraer rol e id del payload del JWT (lectura sin verificación de firma)
+      // Try to decode token payload (not verifying signature)
       try {
-        const payloadB64 = token.split('.')[1]; // segunda parte //ablandoa
-        const payloadJson = JSON.parse(atob(payloadB64));   // decodificar //ablandoa
+        const payloadB64 = token.split('.')[1]; 
+        const payloadJson = JSON.parse(atob(payloadB64));
 
-        // role
+        // Role mapping
         if (payloadJson?.rol != null) {
           let r = String(payloadJson.rol);
           if (r === '1') r = 'coder';
@@ -89,7 +89,7 @@ function login(url) {
           localStorage.setItem('role', r);
         }
 
-        // user_id desde token como respaldo
+        // Fallback: user_id from token
         if (payloadJson?.user_id != null && !localStorage.getItem('user_id')) {
           localStorage.setItem('user_id', String(payloadJson.user_id));
         }
@@ -97,23 +97,22 @@ function login(url) {
         console.warn('[login] jwt decode failed', e);
       }
 
-      // Persistir datos de usuario de la respuesta (tiene prioridad)
+      // Save user info from response
       const uid = String(userFromResp.user_id ?? userFromResp.id ?? '');
       if (uid) localStorage.setItem('user_id', uid);
       if (userFromResp.user_name) localStorage.setItem('user_name', userFromResp.user_name);
 
-      // Fallback si no quedó role
+      // Default role if missing
       if (!localStorage.getItem('role')) localStorage.setItem('role', 'coder');
 
-      // Confirmación en consola
-      console.debug('[login] localStorage keys ahora', {
+      console.debug('[login] localStorage keys', {
         Auth: localStorage.getItem('Auth'),
         role: localStorage.getItem('role'),
         user_id: localStorage.getItem('user_id'),
         hasToken: !!localStorage.getItem('token')
       });
 
-      // Actualizar sidebar si ya está montada (caso login embebido o transición rápida)
+      // Update sidebar UI if mounted
       try {
         const nameEl = document.getElementById('navUserName');
         const roleEl = document.getElementById('navUserRole');
@@ -122,27 +121,26 @@ function login(url) {
         if (roleEl) roleEl.textContent = localStorage.getItem('role') || 'coder';
         if (avatarEl && !avatarEl.querySelector('img')) {
           const profileImage = localStorage.getItem('profile_image');
-            if (profileImage) {
-              avatarEl.innerHTML = `<img src='${profileImage}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
-            }
+          if (profileImage) {
+            avatarEl.innerHTML = `<img src='${profileImage}' alt='avatar' style='width:100%;height:100%;object-fit:cover;border-radius:50%' onerror="this.remove();">`;
+          }
         }
       } catch (_) {}
 
-      // navegar al dashboard
-  // disparar evento global para que dashboard / navbar / mobile menu se actualicen si ya montados
-  document.dispatchEvent(new CustomEvent('user:updated', { detail: { source: 'login' }}));
-  navigate('/dashboard');
+      // Dispatch event and navigate to dashboard
+      document.dispatchEvent(new CustomEvent('user:updated', { detail: { source: 'login' }}));
+      navigate('/dashboard');
 
     } catch (err) {
-      console.error('Login error:', err); // abl
+      console.error('Login error:', err);
       const msg =
         err?.response?.data?.error ||
         err?.message ||
         'Error logging in';
       alert(msg);
     } finally {
-      // re-enable button //ablandoa
-      if (submitBtn) submitBtn.disabled = false;             //ablandoa
+      // Re-enable submit button
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 }

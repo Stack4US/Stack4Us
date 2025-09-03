@@ -1,7 +1,7 @@
 import * as postService from '../services/post.service.js';
 
+// Get all posts
 export async function listAllPosts(req, res, next) {
-  
   try {
     const posts = await postService.getAllPosts();
     res.status(200).json(posts);
@@ -10,6 +10,7 @@ export async function listAllPosts(req, res, next) {
   }
 }
 
+// Create new post
 export async function insertPost(req, res, next) {
   try {
     const newPost = await postService.createPost(req.user.user_id, req.body, req.file);
@@ -19,6 +20,7 @@ export async function insertPost(req, res, next) {
   }
 }
 
+// Delete post by id
 export async function deletePost(req, res, next) {
   try {
     const { id } = req.params;
@@ -35,6 +37,7 @@ export async function deletePost(req, res, next) {
   }
 }
 
+// Update own post (auth required)
 export async function updateOwnPost(req, res, next) {
   try {
     const { post_id } = req.params;
@@ -55,12 +58,12 @@ export async function updateOwnPost(req, res, next) {
   }
 }
 
+// Get posts from one user
 export async function getUserPosts(req, res, next) {
   try {
     const { userId } = req.params;
     const posts = await postService.getPostsByUser(userId);
     res.status(200).json(posts);
-  
   } catch (err) {
     next(err);
   }
