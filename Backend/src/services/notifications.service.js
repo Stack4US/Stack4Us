@@ -1,5 +1,6 @@
 import pool from '../config/data_base_conection.js';
 
+// Get notifications for one user
 export async function getNotificationsByUserId(userId) {
   const uid = parseInt(userId, 10);
   if (!uid || isNaN(uid)) {
@@ -14,6 +15,7 @@ export async function getNotificationsByUserId(userId) {
   return result.rows;
 }
 
+// Create new notification (default message if none provided)
 export async function createNotification({ user_id, message }) {
   const uid = parseInt(user_id, 10);
   if (!uid || isNaN(uid)) {
@@ -34,6 +36,7 @@ export async function createNotification({ user_id, message }) {
   return result.rows[0];
 }
 
+// Mark one notification as read
 export async function markAsRead(notificationId, userId) {
   const nid = parseInt(notificationId, 10);
   const uid = parseInt(userId, 10);

@@ -1,5 +1,6 @@
 import * as notificationsService from '../services/notifications.service.js';
 
+// Create new notification
 export async function insertNotification(req, res, next) {
   try {
     const user_id = req.body.user_id;
@@ -14,6 +15,7 @@ export async function insertNotification(req, res, next) {
   }
 }
 
+// Get all notifications for logged user
 export async function getAllNotifications(req, res, next) {
   try {
     const userId = req.user.user_id;
@@ -24,6 +26,7 @@ export async function getAllNotifications(req, res, next) {
   }
 }
 
+// Mark one notification as read
 export async function markNotificationAsRead(req, res, next) {
   try {
     const userId = req.user.user_id;

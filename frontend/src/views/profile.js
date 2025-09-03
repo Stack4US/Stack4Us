@@ -1,6 +1,6 @@
 // Simple profile view logic
 export async function renderProfileAfterTemplateLoaded(){
-  // Ensure profile stylesheet loaded (avoid duplicate)
+  // Ensure profile CSS is loaded once
   if (!document.querySelector('link[data-profile-css]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
@@ -8,6 +8,8 @@ export async function renderProfileAfterTemplateLoaded(){
     link.setAttribute('data-profile-css','1');
     document.head.appendChild(link);
   }
+
+  // DOM refs
   const nameEl = document.getElementById('profileUserName');
   const roleEl = document.getElementById('profileRole');
   const emailEl = document.getElementById('profileEmail');
@@ -21,7 +23,7 @@ export async function renderProfileAfterTemplateLoaded(){
 
   const API = 'https://stack4us.up.railway.app';
 
-  // Basic user info
+  // Basic user info from localStorage (with fallbacks)
   const user_name = localStorage.getItem('user_name') || 'User';
   let role = localStorage.getItem('role') || localStorage.getItem('rol_id') || 'coder';
   if (role === '1') role = 'coder';
@@ -30,19 +32,25 @@ export async function renderProfileAfterTemplateLoaded(){
   const email = localStorage.getItem('email') || '';
   const user_id = localStorage.getItem('user_id');
 
+  // Cached profile object
   let storedProfile = {};
   try { storedProfile = JSON.parse(localStorage.getItem('user_profile')||'{}'); } catch{}
 
+  // Hydrate from users cache if profile is missing fields
   function hydrateFromCache(){
-    if(storedProfile.profile_image && storedProfile.user_name) return; // already have
+    if(storedProfile.profile_image && storedProfile.user_name) return;
     try{
       const cache = JSON.parse(localStorage.getItem('all_users_cache')||'[]');
       const me = cache.find(u=> String(u.user_id)===String(user_id));
-      if(me){ storedProfile = { ...me, ...storedProfile }; localStorage.setItem('user_profile', JSON.stringify(storedProfile)); }
+      if(me){
+        storedProfile = { ...me, ...storedProfile };
+        localStorage.setItem('user_profile', JSON.stringify(storedProfile));
+      }
     }catch{}
   }
   hydrateFromCache();
 
+  // Refresh data from API (overwrite cache if newer)
   async function refreshFromAPI(){
     try{
       const token = localStorage.getItem('token');
@@ -63,6 +71,7 @@ export async function renderProfileAfterTemplateLoaded(){
   }
   await refreshFromAPI();
 
+  // Render UI with current profile values
   function paint(){
     nameEl.textContent = storedProfile.user_name || user_name;
     roleEl.textContent = role;
@@ -76,38 +85,52 @@ export async function renderProfileAfterTemplateLoaded(){
   }
   paint();
 
+  // Open edit form
   btnEdit?.addEventListener('click', () => {
     form.style.display = 'block';
     btnEdit.style.display = 'none';
     input.value = storedProfile.description || '';
     input.focus();
   });
+
+  // Cancel edit form
   btnCancel?.addEventListener('click', () => {
     form.style.display = 'none';
     btnEdit.style.display = 'inline-block';
     hint.textContent = '';
   });
 
+  // Submit description update (POST to backend)
   form?.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const desc = input.value.trim();
     if (desc.length > 500) { hint.textContent = 'Max 500 chars'; return; }
     hint.textContent = 'Saving...';
+
     try {
       const fd = new FormData();
       fd.append('description', desc);
       const token = localStorage.getItem('token');
-      const r = await fetch(`${API}/edit-user/${user_id}`, { method:'POST', body: fd, headers: token? { 'Authorization': `Bearer ${token}` } : {} });
+      const r = await fetch(`${API}/edit-user/${user_id}`, {
+        method:'POST',
+        body: fd,
+        headers: token? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
       if(!r.ok){
         const data = await r.json().catch(()=>({}));
         hint.textContent = data.error || 'Error saving';
         return;
       }
+
+      // Update local cache and repaint
       const data = await r.json();
       storedProfile = { ...storedProfile, ...data.user };
       localStorage.setItem('user_profile', JSON.stringify(storedProfile));
       hint.textContent = 'Saved';
       paint();
+
+      // Close form after a short delay
       setTimeout(()=>{
         form.style.display='none';
         btnEdit.style.display='inline-block';

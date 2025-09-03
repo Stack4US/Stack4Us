@@ -1,5 +1,6 @@
 import * as userService from '../services/user.service.js';
 
+// Register new user
 export async function registerUser(req, res, next) {
     try {
         const { user_name, email, password } = req.body;
@@ -32,6 +33,7 @@ export async function registerUser(req, res, next) {
     }
 }
 
+// Login user and return token
 export async function loginUser(req, res, next) {
     try {
         const { user_name, password } = req.body;
@@ -45,6 +47,7 @@ export async function loginUser(req, res, next) {
     }
 }
 
+// Get logged user profile
 export async function getUserProfile(req, res, next) {
     try {
         const userId = req.user.user_id;
@@ -58,6 +61,7 @@ export async function getUserProfile(req, res, next) {
     }
 }
 
+// Update logged user profile
 export async function updateUserProfile(req, res, next) {
   try {
     const user_id = req.user.user_id;
@@ -75,6 +79,7 @@ export async function updateUserProfile(req, res, next) {
   }
 }
 
+// Delete user (own or by admin)
 export async function deleteUser(req, res, next) {
     try {
         let userIdToDelete;
@@ -101,6 +106,7 @@ export async function deleteUser(req, res, next) {
     }
 }
 
+// Get all users
 export async function getAllUsers(req, res, next) {
     try {
         const users = await userService.getAllUsers();
@@ -109,4 +115,3 @@ export async function getAllUsers(req, res, next) {
         next(err);
     }
 }
-

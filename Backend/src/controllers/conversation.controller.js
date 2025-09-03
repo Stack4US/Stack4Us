@@ -1,5 +1,6 @@
 import * as conversationService from '../services/conversation.service.js';
 
+// Get all conversations
 export async function listAllConversations(req, res, next) {
     try {
         const conversations = await conversationService.getAllConversation();
@@ -9,11 +10,15 @@ export async function listAllConversations(req, res, next) {
     }
 }
 
+// Create new conversation
 export async function insertConversation(req, res) {
     try {
         const { description, answer_id } = req.body;
         const user_id = req.user.user_id;
-        const newConversation = await conversationService.createConversation({ description, answer_id, user_id },req.file);
+        const newConversation = await conversationService.createConversation(
+            { description, answer_id, user_id },
+            req.file
+        );
 
         res.status(201).json(newConversation);
     } catch (err) {
@@ -22,6 +27,7 @@ export async function insertConversation(req, res) {
     }
 }
 
+// Delete conversation (needs auth)
 export async function deleteConversation(req, res, next) {
     const user = req.user; 
 
@@ -40,6 +46,7 @@ export async function deleteConversation(req, res, next) {
     }
 }
 
+// Get conversations by user id
 export async function getUserConversations(req, res, next) {
     try {
         const conversations = await conversationService.getUserConversations(req.params.user_id);

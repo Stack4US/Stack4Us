@@ -10,23 +10,16 @@ import {
 
 const router = express.Router();
 
+// GET all conversations
 router.get('/', listAllConversations);
+
+// POST new conversation (auth + image upload)
 router.post('/', authenticateToken, upload.single("image"), insertConversation);
+
+// DELETE conversation by id (auth required)
 router.delete('/:conversation_id', authenticateToken, deleteConversation);
+
+// GET conversations by user id
 router.get('/user/:user_id', getUserConversations);
-
-/*
-/api/conversations/
-lista las conversaciones
-
-/api/conversations/
-recibe el autentication token del usuario y el answer_id para crear una conversacion
-
-/api/conversations/:conversation_id
-recibe el autentication token del usuario y elimina la conversacion
-
-/api/conversations/user/:user_id
-recibe el user_id y devuelve las conversaciones de ese usuario
-*/
 
 export default router;
