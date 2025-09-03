@@ -1,180 +1,87 @@
-# 📚 Stack4Us 
+Stack4Us
+Project overview
 
-## 🚀 Project Overview
-Stack4Us is a collaborative platform designed to help beginner programmers overcome coding blocks efficiently. Instead of relying only on AI or spending excessive time reading long documentation, Stack4Us promotes **teamwork, communication, and quick learning**.  
+Stack4Us is a small web platform that helps beginner programmers unblock themselves faster. The main idea is to learn by working with other people. Instead of reading long documentation alone, a user can describe the problem, receive comments from the community, and choose the best answer. The project focuses on faster learning, better problem-solving, practical research, and simple communication between peers.
 
+How it works
 
+A coder creates a post with a clear description of an error or a question. Other users add answers and suggestions. Answers can receive ratings so the most useful one is easy to find. The platform also includes a weekly ranking, simple notifications, and a basic search. There is an integration with Stack Overflow to check related questions without leaving the site. An admin can moderate users and content. The goal is to keep the flow simple: write the problem, get feedback, learn something new, and move on.
 
-Add details such as error messages, code snippets, or screenshots.
+Technology
 
-Receive help and comments from other coders and team leaders.
+The frontend is a Single Page Application built with Vite and JavaScript.
+The backend is an API built with Node.js and Express.
+Data is stored in PostgreSQL using Supabase.
+The repository uses Git and GitHub. The project can be deployed to common services such as Vercel (frontend) and a node host for the API.
 
-Filter issues by category and search faster.
+Installation and execution
 
-Strengthen collaboration and communication skills while learning.
+First, clone the repository and move into the project folder.
 
-The project is focused on improving learning speed, problem-solving, research, and peer-to-peer communication.
-
-
-🛠️ Technologies Used
-
-Frontend: Vite + JavaScript (SPA structure)
-Backend: Node.js + Express
-Database: Supabase (PostgreSQL + Auth + API)
-Version Control: Git & GitHub
-Deployment:  Vercel
-
-
-
- Installation & Execution
- 
-🔹 1. Clone the Repository
-
-git clone https://github.com/Anderson030/Stack4Us.git
+git clone https://github.com/Stack4US/Stack4Us.git
 cd stack4us
 
+Backend
+
+Create an environment file for the backend. Do not share real secrets in the README. Use placeholders and keep the .env file out of version control.
+
+Create Backend/.env with the following keys:
 
 # Database configuration
-DB_HOST=aws-1-us-east-2.pooler.supabase.com
+DB_HOST=your-db-host
 DB_PORT=6543
 DB_NAME=postgres
-DB_USER=postgres.yztwayzwnkydeqwusbuo
-DB_PASSWORD=uWBxpFCklXIRaWYk
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
 
-CLOUDINARY_CLOUD_NAME=di3odvthy
-CLOUDINARY_API_KEY=446741654452756
-CLOUDINARY_API_SECRET=fY7AK6JuiJvrfavaRaXKgO_1lAQ
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 
-SUPABASE_URL=https://yztwayzwnkydeqwusbuo.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6dHdheXp3bmt5ZGVxd3VzYnVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTcxMjYyMywiZXhwIjoyMDcxMjg4NjIzfQ.iuS21FagqyaxarvwhCWTWpiU7o9SgK5FWXjO2JjuQ98
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-service-role-or-anon-key
 
-🔹 3. Install and Run the Backend
 
-The backend uses Node.js + Express.
-cd backend
+Install dependencies and start the server.
+
+cd Backend
+npm install
+npm run dev
+The backend runs by default at http://localhost:3000.
+
+Frontend
+
+Install dependencies and start the development server.
+
+
+cd ../frontend
 npm install
 npm run dev
 
-By default, the backend runs on:
- 👉 http://localhost:3000
+The frontend runs by default at http://localhost:5173.
 
-🔹 4. Install and Run the Frontend
+Roles and permissions
 
-The frontend was built with Vite.
-cd frontend
-npm install
-npm run dev
+There are three simple roles. A Coder can create posts and add answers. A Team Leader can also participate and help other users more actively. An Admin can moderate content and users and keep the space clean. The role information is stored in the token and used by the frontend to show the correct options.
 
-By default, the frontend runs on:
- 👉 http://localhost:5173
+Main features in the first version
 
-🔹 5. Credentials / Roles
+The first version aims to be a practical forum for students and junior developers. Users can register, log in, and manage their profile. A coder can create a post with a title, a description, an optional language tag, and an optional image. The owner can later edit or delete the post.
 
-CODER → Can create tickets and comment.
+Other users can answer with text and, if needed, an image. Each answer can receive a star rating. The average rating helps to identify the most helpful answer. A small ranking highlights active users every week. When someone receives a new answer or a rating, the system creates a simple notification. There is also a page to search content on Stack Overflow directly from the app.
 
-# 📖 Project Documentation (Unofficial)
+Admins have access to moderation tools. They can review posts and users, adjust roles when necessary, and view basic statistics. Search and filters help to find posts by text or by language tag.
 
-*(This documentation is not official, but it provides an overview of the project.)*
+Product story
 
----
+As a user of Stack4Us, I want one place where I can describe a coding problem, receive guidance from other people, and quickly test a possible solution. I also want a fair way to reward helpful answers and a simple history of what I learned. The project tries to reduce the time blocked on errors and increase the quality of collaboration inside a small team.
 
-## 🏆 Epic
-As a user of **Stack4Us** (Coder, Team Leader, or Admin), I want to have a collaborative platform where I can publish my coding problems, receive help from other users, consult external documentation, and participate in a recognition system — in order to solve errors faster, learn, and improve my programming skills within a community.  
+Security note
 
----
+Do not publish real database credentials, API keys, or Cloudinary secrets in the repository or in public documents. Use .env files locally and keep them out of Git with .gitignore. If a secret was exposed by mistake, rotate it immediately in your provider and update the environment files.
 
-## 🎯 Project Scope (MVP – Initial Version)
-The **Stack4Us** project aims to be an interactive and specialized forum for students and programmers facing coding blocks.  
+Credits
 
-The scope of the first version (MVP) includes:  
-
-### ✅ MVP Functionalities
-1. **User and Role Management**
-   - Roles: Coder, Team Leader (TL), Admin.  
-   - Registration and secure login.  
-
-2. **Publishing Coding Problems (Coders)**
-   - Create posts with title, description, programming language tag, and image upload.  
-   - Edit or delete own posts.  
-
-3. **Comment and Answer System**
-   - TL and Coders can comment on posts.  
-   - Answers can be rated with stars to highlight the most useful one.  
-
-4. **Stack Overflow Integration**
-   - Search and consult directly from Stack4Us without leaving the platform.  
-
-5. **Scoring and Weekly Ranking System**
-   - Recognize the most active and highest-rated users.  
-
-6. **Basic Notifications**
-   - Alerts when someone responds or rates a user’s post.  
-
-7. **Admin Panel**
-   - Moderate posts and users.  
-   - View general statistics and weekly reports.  
-   - Send global notifications to all users.  
-
----
-
-## ⚡ Features / Functional Requirements – Stack4Us
-
-1. **User and Role Management**
-   - Registration and login.  
-   - Differentiated roles: Admin, Team Leader (TL), Coder.  
-   - Permissions based on the assigned role.  
-
-2. **Problem Posting (Coders)**
-   - Create posts with title, description, language tag, and image upload.  
-   - Edit or delete own posts.  
-
-3. **Comment and Answer System (Coders / TL)**
-   - Respond to posts with text and images.  
-   - Rate answers with a star rating system.  
-   - Automatically highlight the best-rated answer.  
-
-4. **Stack Overflow Integration**
-   - Search questions and answers directly within the platform without leaving Stack4Us.  
-
-5. **Scoring and Weekly Ranking System**
-   - Assign points based on interactions and ratings.  
-   - Automatic ranking that recognizes top contributors weekly.  
-
-6. **Real-Time Notifications**
-   - Alerts when a user receives responses, mentions, or ratings on their posts.  
-
-7. **Admin Panel (Admin)**
-   - Moderate posts and users.  
-   - Manage roles and permissions.  
-   - View statistics and generate weekly reports.  
-   - Send global notifications to all users.  
-
-8. **Advanced Search and Filters**
-   - Filter posts by title, keywords, tags, or programming language.
-
-     ----------------------------------------------------------
-
-
-
-👨‍💻 Team Credits
-
-This project was developed collaboratively by:
-
-Ana María Barragán
-
-Jackson Alberto Flores Pérez
-
-Daniel Ramírez Agudelo
-
-Jeferson Escudero Rua
-
-Anderson Blandon Álvarez
-
-
-
-
-
----------------------------------------------------------------
-
-With Stack4Us, we aim to create a stronger community of coders that not only solve problems but also learn, share, and grow together.
-
+This project was created by a small team: Ana María Barragán, Jackson Alberto Flores Pérez, Daniel Ramírez Agudelo, Jeferson Escudero Rua, and Anderson Blandon Álvarez. The team goal is to build a friendly space where people can learn, share and grow together through real problems and simple solutions.
